@@ -67,10 +67,10 @@ def main():
     elif action == 'description':
         model, _ = get_model(param, stdout=stdout)
         model.print_()
-    elif action == 'prepare_data':
-        prepare_data(param, stdout)
-    elif action == 'weight_average':
-        weight_average(param, stdout)
+#    elif action == 'prepare_data':
+#        prepare_data(param, stdout)
+#    elif action == 'weight_average':
+#        weight_average(param, stdout)
     else:
         raise Exception('Unknown mode : {}'.format(action))
 
