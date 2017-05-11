@@ -25,10 +25,12 @@ If the model needs to be created, arguments can be used to specify the architect
 `--modeltype` specifies the type of architectures used by the new model, and add the argument `--batchnorm` if you want the network to normalize each feature map between layers. 
 - `--dim` is a list of number of feature maps
 - `--deg` is a list of degrees for the graph convolution poynomials
+
 The following arguments replace the `dim` and `deg` :
 - `--nb_layer` is the number of layer
 - `--deg_layer` is the degree of each layer's polynomial
 - `--feature_maps` is the number of feature maps for each layer
+
 Similar arguments exist for the modification layer architecture.
 
 ##### Training parameters
