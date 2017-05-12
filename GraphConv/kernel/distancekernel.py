@@ -51,7 +51,7 @@ class Distance(nn.Module):
         self.std = std
         self.normalize = normalize
 
-    def forward(self, *argl, **argd):
+    def forward(self, phi, eta):
         adj = self.kernel(phi, eta)
 
         if self.thr is not None:
