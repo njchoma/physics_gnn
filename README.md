@@ -22,6 +22,11 @@ In all cases, `action` indicates what the program should do with the model :
 ##### Cuda
 Add argument `--cuda` to train or test on GPU, CPU will be used otherwise.
 
+##### Normalize Adjacency
+Add argument `--normalize` to normalize the adjacency matrix to a stochastic matrix by dividing each row by its sum.
+If the normalization is performed, and if the architecture uses geometrical information, the sum of each row will also
+be passed as an input feature to the network.
+
 ##### Specify architecture
 If the model needs to be created, arguments can be used to specify the architecture used.
 `--modeltype` specifies the type of architectures used by the new model, and add the argument `--batchnorm` if you want the network to normalize each feature map between layers. 
