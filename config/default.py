@@ -52,12 +52,8 @@ def read_local():
                     if arg_config[0].strip() in local_arguments]
 
     local_config = {arg_config[0].strip(): arg_config[1].strip()
-                    for arg_config in local_config}
-
-    # delete unspecified arguments
-    for arg_name in local_config.keys():
-        if local_config[arg_name] == '':
-            del(local_config[arg_name])
+                    for arg_config in local_config
+                    if len(arg_config[1].strip()) > 0}  # delete unspecified arguments
 
     # stdout can be None
     if 'stdout' in local_config and local_config['stdout'] == 'stdout':

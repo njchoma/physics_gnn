@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from GraphConv.kernel.learnkernel import Gaussian as Adjacency  # EDIT : choice of adjacency type should be done in metaparameter file
+from GraphConv.kernel.learnkernel import DirectionnalGaussian as Adjacency  # EDIT : choice of adjacency type should be done in metaparameter file
 from GraphConv.graphlayer.residualgraphconv import ResidualGraphConv as resgconv
 from GraphConv.functional.batchnorm import batchnorm
 

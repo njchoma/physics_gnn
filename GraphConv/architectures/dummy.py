@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 # EDIT : choice of adjacency type should be done in metaparameter file
-from GraphConv.kernel.learnkernel import Gaussian as Adjacency
+from GraphConv.kernel.learnkernel import DirectionnalGaussian as Adjacency
 from GraphConv.graphlayer.graphconv import GraphConv as gconv
 from GraphConv.functional.batchnorm import batchnorm
 

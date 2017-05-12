@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from math import pi
 from torch.autograd import Variable
+import torch.functional as F
 
 
 def normalize_left(adj):
@@ -43,12 +44,31 @@ class Distance(nn.Module):
     Every adjacency computing class should inherit from this class and redefine the
     method 'forward' by calling the method 'distances'."""
 
-    def __init__(self):
+    def __init__(self, thr=None, std=1., normalize=False):
         super(Distance, self).__init__()
         self.perimeter = 2 * pi
+        self.thr = thr
+        self.std = std
+        self.normalize = normalize
 
     def forward(self, *argl, **argd):
+        adj = self.kernel(phi, eta)
+
+        if self.thr is not None:
+            adj = self.sparsify(adj)
+
+        return adj
+
+    def kernel(self, sqdist):
         raise NotImplementedError
+
+    def sparsify(self, adj):
+        energy_per_row = adj.sum(2)
+        thr = energy_per_row * self.thr  # threshold is a percentage of weight energy
+        thr = thr.expand_as(adj)
+        adj = F.Relu(adj - thr) + thr  # nullify all value below thr in a differtiable manner
+
+        return adj
 
     def distances(self, phi, eta):
         """computes squared distances with 2*pi cyclicity on phi.
