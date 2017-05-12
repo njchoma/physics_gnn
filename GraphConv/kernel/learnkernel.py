@@ -37,8 +37,11 @@ class DirectionnalGaussian(Distance):
 
     def kernel(self, phi, eta):
 
-        phi = phi * self.alpha
-        eta = eta * self.beta
+        var_dir0 = (self.alpha ** 2).expand_as(phi)
+        var_dir1 = (self.beta ** 2).expand_as(eta)
+
+        phi = phi * var_dir0
+        eta = eta * var_dir1
         distances = self.distances(phi, eta)
         adj = softmax(-distances, axis=2)
 
