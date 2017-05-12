@@ -8,7 +8,9 @@ Type `main.py --help` for a list of possible arguments.
 
 ##### Specify model and action
 `--model` and `--mode` are the most import argument : they specify the model used and what to do with it.
+
 `python main.py --model your_model_name --mode action`
+
 will check for an existing `your_model_name` model in storage and use it if available, create it if not.
 In all cases, `action` indicates what the program should do with the model :
 - `train` for training
