@@ -73,9 +73,17 @@ class GNNModifSpatial(nn.Module):
     Collider. The graph is built by defining weight depending on the euclidean
     distance between two energy bursts."""
 
-    def __init__(self, dim, deg, modifdeg, logistic_bias=0, usebatchnorm=False):
+    def __init__(self, dim, deg, modifdeg, logistic_bias=0, usebatchnorm=False, normalize=False):
         super(GNNModifSpatial, self).__init__()
-        dim.insert(0, 3)
+
+        self.normalize = normalize
+        self.adjacency = Adjacency(normalize=self.normalize)
+
+        if self.normalize:
+            dim.insert(0, 4)
+        else:
+            dim.insert(0, 3)
+
         assert(len(dim) == len(deg))
         self.nblayer = len(deg)
         self.dim = dim
@@ -90,7 +98,6 @@ class GNNModifSpatial(nn.Module):
         self.gconv_final = gconv(modif_dim, 1, deg[-1])
         self.logistic_bias = logistic_bias
 
-        self.adjacency = Adjacency()
         self.is_cuda = False
 
         # need maximum degree to iterate the right number of time
@@ -101,13 +108,17 @@ class GNNModifSpatial(nn.Module):
         # renormalise energy
         e = batchnorm(e, axis=1)
 
-        # initiate adjacency matrix
+        # adjacency for GNN
         adj = self.adjacency(phi, eta)
 
         # input is a concatenation of e and eta
         eta = batchnorm(eta, axis=1)
         phi = batchnorm(phi, axis=1)
-        e = torch.stack((e, eta, phi), dim=1)
+        features = [e, eta, phi]
+        if self.normalize:  # the renormalization factors were returned with adj
+            adj, factors = adj
+            features.append(factors)
+        e = torch.stack(features, dim=1)
 
         # apply GNN
         for layer in self.gconv:  # apply first convolutions

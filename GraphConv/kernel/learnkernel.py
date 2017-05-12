@@ -1,6 +1,5 @@
 import torch
 from torch.nn import Parameter
-from GraphConv.functional.softmax import softmax
 from GraphConv.kernel.distancekernel import Distance
 
 
@@ -17,10 +16,7 @@ class Gaussian(Distance):
         sqdist = self.distances(phi, eta)
         var = (self.std ** 2).expand_as(sqdist)
 
-        if self.normalize:
-            adj = softmax(-sqdist / var, axis=2)
-        else:
-            adj = (-sqdist / var).exp()
+        adj = (-sqdist / var).exp()
 
         return adj
 
@@ -37,12 +33,13 @@ class DirectionnalGaussian(Distance):
 
     def kernel(self, phi, eta):
 
-        var_dir0 = (self.alpha ** 2).expand_as(phi)
-        var_dir1 = (self.beta ** 2).expand_as(eta)
+        std_dir0 = self.alpha.expand_as(phi)
+        std_dir1 = self.beta.expand_as(eta)
 
-        phi = phi * var_dir0
-        eta = eta * var_dir1
-        distances = self.distances(phi, eta)
-        adj = softmax(-distances, axis=2)
+        phi = phi * std_dir0
+        eta = eta * std_dir1
+
+        sqdist = self.distances(phi, eta)
+        adj = (-sqdist).exp()
 
         return adj

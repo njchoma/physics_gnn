@@ -10,10 +10,12 @@ def normalize_left(adj):
     input : matrix W of size (batch, n, n)
     output : D^{-1}.W where D is the degree matrix
     """
-    rowweight = adj.sum(2).expand_as(adj)
+    factors = adj.sum(2)
+    rowweight = factors.expand_as(adj)
     # normalize
     adj = adj / rowweight
-    return adj
+    factors = factors.squeeze(2)
+    return adj, factors
 
 
 def symmetric(adj):
@@ -54,20 +56,24 @@ class Distance(nn.Module):
     def forward(self, phi, eta):
         adj = self.kernel(phi, eta)
 
-        if self.thr is not None:
-            adj = self.sparsify(adj)
+        if self.normalize:
+            adj, factors = normalize_left(adj)
+            adj = self.sparsify_if_needed(adj)
+            return (adj, factors)
+        else:
+            adj = self.sparsify_if_needed(adj)
+            return adj
 
-        return adj
-
-    def kernel(self, sqdist):
+    def kernel(self, phi, eta):
+        """Computes squared distances and applies point to point function"""
         raise NotImplementedError
 
-    def sparsify(self, adj):
-        energy_per_row = adj.sum(2)
-        thr = energy_per_row * self.thr  # threshold is a percentage of weight energy
-        thr = thr.expand_as(adj)
-        adj = F.Relu(adj - thr) + thr  # nullify all value below thr in a differtiable manner
-
+    def sparsify_if_needed(self, adj):
+        if self.thr is not None:
+            energy_per_row = adj.sum(2)
+            thr = energy_per_row * self.thr  # threshold is a percentage of weight energy
+            thr = thr.expand_as(adj)
+            adj = F.Relu(adj - thr) + thr  # nullify all value below thr in a differtiable manner
         return adj
 
     def distances(self, phi, eta):

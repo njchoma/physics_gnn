@@ -60,28 +60,39 @@ class GNNSpatial(nn.Module):
     Collider. The graph is built by defining weight depending on the euclidean
     distance between two energy bursts."""
 
-    def __init__(self, dim, deg, logistic_bias=0):
+    def __init__(self, dim, deg, logistic_bias=0, normalize=False):
         super(GNNSpatial, self).__init__()
-        dim.insert(0, 3)
+
+        self.normalize = normalize
+        self.adjacency = Adjacency(normalize=self.normalize)
+
+        if self.normalize:
+            dim.insert(0, 4)
+        else:
+            dim.insert(0, 3)
+
         assert(len(dim) == len(deg))
         self.nblayer = len(dim)
         self.dim = dim
         self.deg = deg
         self.dim.append(1)  # output dimension
         self.gconv = nn.ModuleList([gconv(dim[i], dim[i + 1], deg[i]) for i in range(self.nblayer)])
-        self.adjacency = Adjacency()
         self.logistic_bias = logistic_bias
 
     def forward(self, e, phi, eta):
         e = batchnorm(e, axis=1)
 
-        # applying the GNN
+        # adjacency for GNN
         adj = self.adjacency(phi, eta)
 
         # input is a concatenation of e and eta
         eta = batchnorm(eta, axis=1)
         phi = batchnorm(phi, axis=1)
-        e = torch.stack((e, eta, phi), dim=1)
+        features = [e, eta, phi]
+        if self.normalize:  # the renormalization factors were returned with adj
+            adj, factors = adj
+            features.append(factors)
+        e = torch.stack(features, dim=1)
 
         for i in range(self.nblayer - 1):
             e = self.gconv[i](adj, e)

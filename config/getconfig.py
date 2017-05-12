@@ -30,7 +30,9 @@ def readargs(project_dir, description):
     add_arg('--modeltype', dest='modeltype',
             help='type of architecture')
     add_arg('--batchnorm', dest='batchnorm', action='store_true',
-            help='use batch normalisation in layers')
+            help='use batch normalization in layers')
+    add_arg('--normalize', dest='normalize', action='store_true',
+            help='normalize adjacency to be stochastic, use normalization factors a input feature')
 
     add_arg('--dim', dest='dim', type=int, nargs='+',
             help='list of dimensions for GNN layers')
