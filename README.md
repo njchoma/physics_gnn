@@ -58,7 +58,7 @@ your_project/
 ```
 
 ### Data structure
-Use `--datadir` to specify a directory containing data organized in batch. It should be organized this way :
+Use `--datadir` to specify a directory containing data organized in batch. It should be organized this way to work with the batch generator provided in `Atlas`:
 ```
 datadir/
     |-- train/  # contains everything concerning the training set
