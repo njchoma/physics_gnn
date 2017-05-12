@@ -1,0 +1,6 @@
+# This file contains local paths, such as `datadir` or `netdir`.
+# Write 'stdout' for stdout if you don't want prints to be redirected to a file.
+
+datadir:
+netdir: 
+stdout:  stdout

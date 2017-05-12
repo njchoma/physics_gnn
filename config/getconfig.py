@@ -1,10 +1,10 @@
 from os.path import join
 import argparse
 from config.hyperparameters import hyperparameters
-from config.globalconfig import globalconfig
+from config.default import defaultconfig, read_local
 
 
-def readargs(description):
+def readargs(project_dir, description):
     """Reads from stdin and returns arguments in a dictionary container"""
 
     parser = argparse.ArgumentParser(description=description)
@@ -19,11 +19,11 @@ def readargs(description):
     # paths and modelname
     add_arg('--model', dest='model',
             help='model name')
-    add_arg('--datadir', dest='datadir',
+    add_arg('--datadir', dest='datadir', default=join(project_dir, 'data'),
             help='path to data')
-    add_arg('--netdir', dest='netdir',
+    add_arg('--netdir', dest='netdir', default=join(project_dir, 'models'),
             help='path to models directory')
-    add_arg('--stdout', dest='stdout',
+    add_arg('--stdout', dest='stdout', default=None,
             help='redirects stdout')
 
     # model initialization parameters
@@ -99,10 +99,11 @@ def readargs(description):
 
 
 class Config:
-    def __init__(self, description='python script used for GNN training or testing'):
+    def __init__(self, project_dir, description='python script used for GNN training or testing'):
         self.update(hyperparameters())  # code related parameters
-        self.update(globalconfig)
-        param = readargs(description)
+        self.update(defaultconfig)
+        self.update(read_local())
+        param = readargs(project_dir, description)
         self.update(param)
 
         # some paths that depend on input

@@ -1,5 +1,5 @@
 import sys
-from os.path import join
+from os.path import join, abspath, pardir
 from utils.files import makefile_if_not_there, print_
 from utils.loss_modif import HingeEmbeddingLoss
 from torch.nn.functional import binary_cross_entropy
@@ -48,7 +48,8 @@ def plot(param):
 
 def main():
     # get meta parameters
-    param = Config(description='Train or test GNNs and build ROC curve')
+    project_dir = abspath(join(join(__file__, pardir), pardir))
+    param = Config(project_dir, description='Train or test GNNs and build ROC curve')
 
     # printing parameter
     if param.stdout is not None:

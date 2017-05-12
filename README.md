@@ -15,7 +15,7 @@ In all cases, `action` indicates what the program should do with the model :
 - `test` for testing
 - `plot` for ploting the statistics aquired during training (loss, average and standard deviation for each class, ...)
 - `description` for printing the model's description
-- `setdefault` not implemented yet
+- `setdefault` not implemented yet, will edit the `config/local.txt` file.
 
 ##### Cuda
 Add argument `--cuda` to train or test on GPU, CPU will be used otherwise.
@@ -36,6 +36,14 @@ Similar arguments exist for the modification layer architecture.
 ##### Training parameters
 You can specify an initial learning rate, the rate of learning rate decay or the time window for that decay.
 You can also modify the number of epochs for training, the number of batch to be used (especially usefull for quick testing), the frequency at which statistics will be printed...
+
+
+### Default organization
+You can specify local paths in `config/local.txt` instead of specifying it every time you use the `main`.
+If you don't, the `datadir`, `netdir` and `stdout` will take their default value, and prints won't be redirected.
+Those default values rely on this code being in a directory, on the same level as :
+- `data` : a directory (or link to a directory) containing the data in batch form
+- `models` : a storage directory for previously trained model. Any trained model will be saved there.
 
 
 ### Data structure
