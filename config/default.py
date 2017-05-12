@@ -1,15 +1,10 @@
 import os.path as path
-from config.getdir import getdatadir, getnetdir, getstdout
 
 """Values by default for parameters. Any parameters given would
 overwrite those"""
 
 
 defaultconfig = {
-    # paths and stdout
-    'datadir': getdatadir(),
-    'netdir': getnetdir(),
-    'stdout': getstdout(),
 
     # training parameters
     'epoch': 10,
