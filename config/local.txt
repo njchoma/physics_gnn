@@ -3,4 +3,4 @@
 
 datadir:
 netdir: 
-stdout:  stdout
+stdout:
