@@ -45,6 +45,17 @@ Those default values rely on this code being in a directory, on the same level a
 - `data` : a directory (or link to a directory) containing the data in batch form
 - `models` : a storage directory for previously trained model. Any trained model will be saved there.
 
+```
+your_project/
+    |-- GCNN/
+    |       |...
+    |
+    |-- data/
+    |       |...  # explained below
+    |
+    |-- models/
+            |...  # explained below
+```
 
 ### Data structure
 Use `--datadir` to specify a directory containing data organized in batch. It should be organized this way :
