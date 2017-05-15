@@ -57,13 +57,13 @@ def readargs(project_dir, description):
 
     add_arg('--lr', dest='lr', type=float,
             help='initial learning rate')
-    add_arg('--logistic_bias', dest='logistic_bias', type=float,
+    add_arg('--logistic_bias', dest='logistic_bias', type=float, default=0,
             help='biais applied before logistic regression')
 
     # training parameters
     add_arg('--epoch', dest='epoch', type=int,
             help='number of epoch for training')
-    add_arg('--nb_batch', dest='nb_batch', type=int,
+    add_arg('--nb_batch', dest='nb_batch', type=int, default=float('+inf'),
             help='number of batchs for training')
     add_arg('--lr_thr', dest='lr_thr', type=float,
             help='threshold to update learning rate')
@@ -71,7 +71,7 @@ def readargs(project_dir, description):
             help='multiplication factor to update learning rate')
     add_arg('--lr_nbbatch', dest='lr_nbbatch', type=int,
             help='time window (in number of batch) to update learning rate')
-    add_arg('--weightfunc', dest='weightfunc',
+    add_arg('--weightfunc', dest='weightfunc', default=None,
             help='name of function that should be applied to use custom weights')
     add_arg('--nb_save', dest='nb_save', type=int,
             help='number of batchs after which the model is saved')
@@ -88,7 +88,7 @@ def readargs(project_dir, description):
             help='number of batchs in one step for statistics')
 
     # graphics parameters
-    add_arg('--zoom', dest='zoom', type=float, nargs='+',
+    add_arg('--zoom', dest='zoom', type=float, nargs='+', default=None,
             help='list of False Positive rate for zooming on ROC curve')
 
     # cuda
@@ -129,18 +129,9 @@ class Config:
         if self.mode not in self.possible_modes:
             raise Exception('Unknown mode : {}\n'.format(self.mode))
 
-    # some attributes are not necessary
     def __getattr__(self, name):
-        """Handles default values for some arguments"""
-
-        if name == 'nb_batch':
-            return float('+inf')
-        elif name in ['zoom', 'stdout', 'weightfunc']:
-            return None
-        elif name == 'logistic_bias':
-            return 0
-        else:
-            raise AttributeError('Missing parameter : {}\n'.format(name))
+        """Raises error for missing parameters"""
+        raise AttributeError('Missing parameter : {}\n'.format(name))
 
     def init_same_layers_parameters(self):
         """simple parameters for network initialisation with same parameters for
