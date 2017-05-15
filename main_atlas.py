@@ -1,7 +1,7 @@
 import sys
 from os.path import join, abspath, pardir
 from utils.files import makefile_if_not_there, print_
-from utils.loss_modif import HingeEmbeddingLoss
+from utils.loss_modif import MarginRankingLoss
 from torch.nn.functional import binary_cross_entropy
 from config.getconfig import Config
 from Atlas.getmodel import get_model
@@ -19,7 +19,7 @@ def train_or_test(param, stdout=None):
     if param.loss == 'BCE':
         criterion = binary_cross_entropy
     elif param.loss == 'HingeEmbedding':
-        criterion = HingeEmbeddingLoss()
+        criterion = MarginRankingLoss()
 
     # Optimizer
     if param.optimizer == 'SGD':
