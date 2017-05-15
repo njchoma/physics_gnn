@@ -27,6 +27,6 @@ class DirectionnalGaussianKNN(DistanceKNN):
 
         # sparsify with mask
         mask = self.knn(sqdist.data)
-        mask = Variable(mask.to_dense())
+        mask = Variable(mask.to_dense()).cuda()
         return mask * adj
 

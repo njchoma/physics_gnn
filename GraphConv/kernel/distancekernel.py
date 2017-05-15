@@ -132,8 +132,5 @@ class DistanceKNN(Distance):
 
         mask = sparse.FloatTensor(index, value, dist.size())
 
-        if dist.is_cuda:
-            mask = mask.cuda()
-
         return mask
 
