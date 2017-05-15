@@ -23,7 +23,7 @@ def readargs(project_dir, description):
             help='path to data')
     add_arg('--netdir', dest='netdir', default=join(project_dir, 'models'),
             help='path to models directory')
-    add_arg('--stdout', dest='stdout', default=None,
+    add_arg('--stdout', dest='stdout',
             help='redirects stdout')
 
     # model initialization parameters
@@ -34,7 +34,7 @@ def readargs(project_dir, description):
     add_arg('--normalize', dest='normalize', action='store_true',
             help='normalize adjacency to be stochastic, use normalization factors a input feature')
 
-    add_arg('--knn', dest='knn', type=int, default=None,
+    add_arg('--knn', dest='knn', type=int,
             help='K-NN sparsification for adjacency')
 
     add_arg('--dim', dest='dim', type=int, nargs='+',
@@ -71,7 +71,7 @@ def readargs(project_dir, description):
             help='multiplication factor to update learning rate')
     add_arg('--lr_nbbatch', dest='lr_nbbatch', type=int,
             help='time window (in number of batch) to update learning rate')
-    add_arg('--weightfunc', dest='weightfunc', default=None,
+    add_arg('--weightfunc', dest='weightfunc',
             help='name of function that should be applied to use custom weights')
     add_arg('--nb_save', dest='nb_save', type=int,
             help='number of batchs after which the model is saved')
@@ -88,7 +88,7 @@ def readargs(project_dir, description):
             help='number of batchs in one step for statistics')
 
     # graphics parameters
-    add_arg('--zoom', dest='zoom', type=float, nargs='+', default=None,
+    add_arg('--zoom', dest='zoom', type=float, nargs='+',
             help='list of False Positive rate for zooming on ROC curve')
 
     # cuda
@@ -105,11 +105,11 @@ def readargs(project_dir, description):
 
 class Config:
     def __init__(self, project_dir, description='python script used for GNN training or testing'):
-        self.update(hyperparameters())  # code related parameters
-        self.update(defaultconfig)
-        self.update(read_local())
+        self.update_default(defaultconfig)
+        self.update_default(read_local())
         param = readargs(project_dir, description)
         self.update(param)
+        self.update(hyperparameters())  # code related parameters
 
         # some paths that depend on input
         self.netdir = join(self.netdir, self.model)
@@ -136,15 +136,22 @@ class Config:
     def init_same_layers_parameters(self):
         """simple parameters for network initialisation with same parameters for
         each layer"""
-        if hasattr(self, 'nb_layer'):
+        if self.nb_layer is not None:
             self.dim = [self.feature_maps] * (self.nb_layer - 1)
-        if hasattr(self, 'deg_layer'):
+        if self.deg_layer is not None:
             self.deg = [self.deg_layer] * self.nb_layer
-        if hasattr(self, 'deg_modiflayer'):
+        if self.deg_modiflayer is not None:
             self.modifdeg = [self.deg_modiflayer] * self.nb_modiflayer
 
-    def update(self, dictionnary):
+    def update_default(self, dictionnary):
         """adds key -> value from dictionnary if value is not None"""
         for key in dictionnary.keys():
             if dictionnary[key] is not None:
+                self.__dict__[key] = dictionnary[key]
+
+    def update(self, dictionnary):
+        """adds key -> value from dictionnary if value is not None
+        or if key is not mapped yet"""
+        for key in dictionnary.keys():
+            if key not in self.__dict__ or dictionnary[key] is not None:
                 self.__dict__[key] = dictionnary[key]
