@@ -1,12 +1,10 @@
 import sys
 from os.path import join, abspath, pardir
 from utils.files import makefile_if_not_there, print_
-from utils.loss_modif import MarginRankingLoss
-from torch.nn.functional import binary_cross_entropy
 from config.getconfig import Config
 from Atlas.getmodel import get_model
-from Atlas.optim.optimizer import SGDOptimizer, AdamOptimizer
 from graphic.plotstats import plot_statistics
+import utils.choose_options as choose
 
 
 def train_or_test(param, stdout=None):
@@ -15,18 +13,8 @@ def train_or_test(param, stdout=None):
     print_(('retrieved' if ret else 'created') + ' model', stdout=stdout)
     model.printdescr(stdout=stdout)
 
-    # Loss function
-    if param.loss == 'BCE':
-        criterion = binary_cross_entropy
-    elif param.loss == 'HingeEmbedding':
-        criterion = MarginRankingLoss()
-
-    # Optimizer
-    if param.optimizer == 'SGD':
-        Optimizer = SGDOptimizer
-    elif param.optimizer == 'Adam':
-        Optimizer = AdamOptimizer
-    optimizer = Optimizer(model, param)
+    criterion = choose.loss(param.loss)
+    optimizer = choose.optimizer(param.optimizer)(model, param)
 
     # Training or Testing
     nb_epoch = param.epoch
