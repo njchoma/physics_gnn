@@ -1,5 +1,6 @@
 from os.path import join
 from utils.files import makefile_if_not_there, print_
+from math import sqrt
 
 
 class Statistics:
@@ -43,11 +44,17 @@ class Statistics:
 
         nb_ones = labels.sum()
         output_avg_ones = (output * labels).sum()
-        output_std_ones = (((output - output_avg_ones) * labels) ** 2).sum()
+        if nb_ones > 0:
+            output_std_ones = (((output - output_avg_ones / nb_ones) * labels) ** 2).sum()
+        else:
+            output_std_ones = 0
 
         nb_zero = (1 - labels).sum()
         output_avg_zero = (output * (1 - labels)).sum()
-        output_std_zero = (((output - output_avg_zero) * (1 - labels)) ** 2).sum()
+        if nb_zero > 0:
+            output_std_zero = (((output - output_avg_zero / nb_zero) * (1 - labels)) ** 2).sum()
+        else:
+            output_std_zero = 0
 
         # update buffers for average stats
         self.buffer[mode]['loss'] += loss_step
@@ -69,12 +76,13 @@ class Statistics:
         if self.nb_batch_in_buffer[mode] >= self.param.nbdisplay:
             self.nb_batch_in_buffer[mode] = 0
 
+            print(self.buffer[mode]['std1'], self.buffer[mode]['nb_ones'])
             self.buffer[mode]['loss'] /= self.param.nbdisplay
             self.buffer[mode]['kernel'] /= self.param.nbdisplay
             self.buffer[mode]['avg1'] /= self.buffer[mode]['nb_ones']
-            self.buffer[mode]['std1'] /= self.buffer[mode]['nb_ones']
+            self.buffer[mode]['std1'] = sqrt(self.buffer[mode]['std1'] / self.buffer[mode]['nb_ones'])
             self.buffer[mode]['avg0'] /= self.buffer[mode]['nb_zero']
-            self.buffer[mode]['std0'] /= self.buffer[mode]['nb_zero']
+            self.buffer[mode]['std0'] = sqrt(self.buffer[mode]['std0'] / self.buffer[mode]['nb_zero'])
 
             if mode == 'train':
                 for stat in self.stats:
