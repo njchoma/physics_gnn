@@ -53,8 +53,9 @@ def init_model_type(param):
     elif modeltype == 'RGCs_FCL':
         return RGCs_FCL(
             param.dim, param.deg, usebatchnorm=param.batchnorm,
-            logistic_bias=param.logistic_bias, normalize=param.normalize
-        ), ['dim', 'deg', 'batchnorm', 'logistic_bias']
+            logistic_bias=param.logistic_bias, normalize=param.normalize,
+            knn=param.knn
+        ), ['dim', 'deg', 'batchnorm', 'logistic_bias', 'knn']
 
     # UNKNOWN ARGUMENT
 

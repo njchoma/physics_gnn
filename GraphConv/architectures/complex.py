@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from GraphConv.kernel.learnkernel import DirectionnalGaussian as Adjacency  # EDIT : choice of adjacency type should be done in metaparameter file
+from GraphConv.kernel.sparsekernel import DirectionnalGaussianKNN as AdjacencyKNN  # EDIT : choice of adjacency type should be done in metaparameter file
 from GraphConv.graphlayer.residualgraphconv import ResidualGraphConv as resgconv
 from GraphConv.functional.batchnorm import batchnorm
 
@@ -11,11 +12,15 @@ class RGCs_FCL(nn.Module):
     Collider. The graph is built by defining weight depending on the euclidean
     distance between two energy bursts."""
 
-    def __init__(self, dim, deg, usebatchnorm=False, logistic_bias=0, normalize=False):
+    def __init__(self, dim, deg, usebatchnorm=False, logistic_bias=0, normalize=False, knn=None):
         super(RGCs_FCL, self).__init__()
 
         self.normalize = normalize
-        self.adjacency = Adjacency(normalize=self.normalize)
+
+        if knn is None:
+            self.adjacency = Adjacency(normalize=self.normalize)
+        else:
+            self.adjacency = AdjacencyKNN(knn, normalize=self.normalize)
 
         if self.normalize:
             dim.insert(0, 4)

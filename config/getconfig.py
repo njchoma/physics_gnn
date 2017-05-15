@@ -34,6 +34,9 @@ def readargs(project_dir, description):
     add_arg('--normalize', dest='normalize', action='store_true',
             help='normalize adjacency to be stochastic, use normalization factors a input feature')
 
+    add_arg('--knn', dest='knn', type=int, default=None,
+            help='K-NN sparsification for adjacency')
+
     add_arg('--dim', dest='dim', type=int, nargs='+',
             help='list of dimensions for GNN layers')
     add_arg('--deg', dest='deg', type=int, nargs='+',
