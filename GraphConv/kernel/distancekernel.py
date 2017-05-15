@@ -116,6 +116,8 @@ class DistanceKNN(Distance):
 
         value, neigh = dist.sort(2)
         neigh = neigh[:, :, 1:(self.k + 1)]  # start from 1 to remove edge to self
+        value = torch.ones(neigh.numel())
+        neigh = neigh.cpu()  # need to be cpu for sparse creation
 
         index = torch.LongTensor(range(dist.size()[1]))
         index = index.unsqueeze(0).unsqueeze(2).expand_as(neigh)
@@ -123,21 +125,15 @@ class DistanceKNN(Distance):
         batch = torch.LongTensor(range(dist.size()[0]))
         batch = batch.unsqueeze(1).unsqueeze(2).expand_as(neigh)
 
-        if isinstance(dist, Variable):
-            index = Variable(index)
-            batch = Variable(batch)
-
-        if dist.is_cuda:
-            index = index.cuda()
-            batch = batch.cuda()
-
         batch = batch.contiguous().view(-1)
         index = index.contiguous().view(-1)
         neigh = neigh.contiguous().view(-1)
         index = torch.stack((batch, index, neigh), dim=0)
 
-        value = torch.ones(index.size()[1])
-        res = sparse.FloatTensor(index, value, dist.size())
+        mask = sparse.FloatTensor(index, value, dist.size())
 
-        return res
+        if dist.is_cuda:
+            mask = mask.cuda()
+
+        return mask
 
