@@ -25,14 +25,6 @@ def train_or_test(param, stdout=None):
     print_('Done {}ing.'.format(param.mode), stdout=stdout)
 
 
-def prepare_data(param, stdout=None):
-    raise NotImplementedError("Mode 'prepare_data' hasn't been implemented yet")
-
-
-def plot(param):
-    plot_statistics(param)
-
-
 def main():
     # get meta parameters
     project_dir = abspath(join(join(__file__, pardir), pardir))
@@ -51,12 +43,12 @@ def main():
     if action in ['train', 'test']:
         train_or_test(param, stdout)
     elif action == 'plot':
-        plot(param)
+        plot_statistics(param)
     elif action == 'description':
         model, _ = get_model(param, stdout=stdout)
         model.print_()
     elif action == 'prepare_data':
-        raise NotImplementedError
+        raise NotImplementedError("current 'data_prepare' mode does not correspond to the data format expected in training.")
     elif action == 'weight_average':
         raise NotImplementedError
     elif action == 'setdefault':
