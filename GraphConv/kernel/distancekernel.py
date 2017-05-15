@@ -3,6 +3,7 @@ import torch.nn as nn
 from math import pi
 from torch.autograd import Variable
 import torch.functional as F
+import torch.sparse as sparse
 
 
 def normalize_left(adj):
@@ -103,8 +104,8 @@ class Distance(nn.Module):
 
 
 class DistanceKNN(Distance):
-    def __init__(self, k):
-        super(DistanceKNN, self).__init__()
+    def __init__(self, k, *args, **kwargs):
+        super(DistanceKNN, self).__init__(*args, **kwargs)
         self.k = k
 
     def knn(self, dist):
@@ -114,8 +115,7 @@ class DistanceKNN(Distance):
         """
 
         value, neigh = dist.sort(2)
-        value = value[:, :, -self.k:]
-        neigh = neigh[:, :, -self.k:]
+        neigh = neigh[:, :, 1:(self.k + 1)]  # start from 1 to remove edge to self
 
         index = torch.LongTensor(range(dist.size()[1]))
         index = index.unsqueeze(0).unsqueeze(2).expand_as(neigh)
@@ -136,14 +136,8 @@ class DistanceKNN(Distance):
         neigh = neigh.contiguous().view(-1)
         index = torch.stack((batch, index, neigh), dim=0)
 
-        value = value.contiguous().view(-1)
+        value = torch.ones(index.size()[1])
+        res = sparse.FloatTensor(index, value, dist.size())
 
-        return value, index
+        return res
 
-
-if __name__ == '__main__':
-    phi = Variable(torch.rand(1, 200))
-    eta = Variable(torch.rand(1, 200))
-    adj = DistanceKNN(2)
-    dist = adj.distances(phi, eta)
-    knn = adj.knn(dist)
