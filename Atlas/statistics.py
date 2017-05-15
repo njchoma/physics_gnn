@@ -76,7 +76,6 @@ class Statistics:
         if self.nb_batch_in_buffer[mode] >= self.param.nbdisplay:
             self.nb_batch_in_buffer[mode] = 0
 
-            print(self.buffer[mode]['std1'], self.buffer[mode]['nb_ones'])
             self.buffer[mode]['loss'] /= self.param.nbdisplay
             self.buffer[mode]['kernel'] /= self.param.nbdisplay
             self.buffer[mode]['avg1'] /= self.buffer[mode]['nb_ones']
