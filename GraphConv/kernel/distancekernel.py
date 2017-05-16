@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from math import pi
-from torch.autograd import Variable
 import torch.functional as F
 import torch.sparse as sparse
 
