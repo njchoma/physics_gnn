@@ -18,8 +18,8 @@ defaultconfig = {
     'lr_nbbatch': 20000,
 
     # printing parameters
-    'nbdisplay': 500,
-    'nbstep': 5,
+    'nbdisplay': 2000,
+    'nbstep': 20,
 
     # ploting parameters
     'zoom': [1, 0.1, 0.01, 0.001, 0.0001],
