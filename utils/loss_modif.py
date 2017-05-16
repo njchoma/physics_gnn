@@ -1,5 +1,6 @@
 import torch.nn as nn
 from torch.nn.functional import relu
+from torch.autograd import Variable
 
 
 class MarginRankingLoss(nn.Module):
@@ -29,8 +30,9 @@ class MarginRankingLoss(nn.Module):
         self.margin = margin
         self.size_average = size_average
 
-    def forward(self, x, label, w):
+    def forward(self, x, label, weight):
+        weight = Variable(weight)
         label = (2 * label - 1).type_as(x)  # from {0, 1} to {-1, 1}
         x = - (label * x - self.margin)
-        x = w * relu(x)
+        x = weight * relu(x)
         return x.mean()
