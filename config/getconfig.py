@@ -73,7 +73,7 @@ def readargs(project_dir, description):
             help='time window (in number of batch) to update learning rate')
     add_arg('--weightfunc', dest='weightfunc',
             help='name of function that should be applied to use custom weights')
-    add_arg('--nb_save', dest='nb_save', type=int,
+    add_arg('--nb_save', dest='nb_save', type=int, default=float('+inf'),
             help='number of batchs after which the model is saved')
 
     add_arg('--optimizer', dest='optimizer',

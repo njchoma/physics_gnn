@@ -8,7 +8,6 @@ defaultconfig = {
 
     # training parameters
     'epoch': 10,
-    'nb_save': 50000,
 
     # optimizer options
     'optimizer': 'Adam',
