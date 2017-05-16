@@ -51,11 +51,12 @@ def init_model_type(param):
     # MORE COMPLEX MODELS
 
     elif modeltype == 'RGCs_FCL':
+        logistic_regression = param.logistic_bias if param.loss == 'BCE' else None
         return RGCs_FCL(
             param.dim, param.deg, usebatchnorm=param.batchnorm,
-            logistic_bias=param.logistic_bias, normalize=param.normalize,
-            knn=param.knn
-        ), ['dim', 'deg', 'batchnorm', 'logistic_bias', 'knn']
+            normalize=param.normalize, knn=param.knn,
+            logistic_regression=logistic_regression
+        ), ['dim', 'deg', 'batchnorm', 'knn', 'logistic_bias', 'loss']
 
     # UNKNOWN ARGUMENT
 

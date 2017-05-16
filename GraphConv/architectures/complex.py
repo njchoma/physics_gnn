@@ -12,7 +12,9 @@ class RGCs_FCL(nn.Module):
     Collider. The graph is built by defining weight depending on the euclidean
     distance between two energy bursts."""
 
-    def __init__(self, dim, deg, usebatchnorm=False, logistic_bias=0, normalize=False, knn=None):
+    def __init__(
+            self, dim, deg, usebatchnorm=False,
+            normalize=False, knn=None, logistic_regression=None):
         super(RGCs_FCL, self).__init__()
 
         self.normalize = normalize
@@ -33,7 +35,7 @@ class RGCs_FCL(nn.Module):
         self.deg = deg
         self.resgconv = nn.ModuleList([resgconv(dim[i], dim[i + 1], deg[i], F.relu, bn=self.bn) for i in range(self.nblayer - 1)])
         self.fc = nn.Linear(dim[-1], 1)
-        self.logistic_bias = logistic_bias
+        self.logistic_regression = logistic_regression
 
     def forward(self, e, phi, eta):
         e = batchnorm(e, axis=1)
@@ -57,7 +59,8 @@ class RGCs_FCL(nn.Module):
         e = self.fc(e).squeeze(1)
 
         # sigmoid for logistic regression
-        e = e + self.logistic_bias
-        e = F.sigmoid(e)
+        if self.logistic_regression is not None:
+            e = e + self.logistic_regression
+            e = F.sigmoid(e)
 
         return e
