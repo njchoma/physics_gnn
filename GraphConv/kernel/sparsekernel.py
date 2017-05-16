@@ -63,6 +63,6 @@ class DirectionnalGaussianKNN(Distance):
         adj = (-sqdist).exp()
 
         # sparsify with mask
-        mask = self.knn(sqdist.data)
-        adj[1 - mask] = 0
+        mask = Variable(self.knn(sqdist.data)).type_as(adj)
+        adj = adj * mask
         return adj
