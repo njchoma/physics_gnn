@@ -19,9 +19,7 @@ def statpath(statdir, stat):
 
 def plot_statistics(param, stats=None, figsize=(20, 15)):
     possible_stats = ['loss_step'] + param.possible_stats
-
-    possible_stats.remove('std0')
-    possible_stats.remove('std1')
+    print(possible_stats)
 
     if stats is None:
         stats = possible_stats
@@ -35,5 +33,7 @@ def plot_statistics(param, stats=None, figsize=(20, 15)):
         ax.plot(data, label=stat)
         ax.legend(loc="upper right")
 
-    fig.savefig(join(param.statdir, 'stats.png'))
+    loc = join(param.statdir, 'stats.png')
+    fig.savefig(loc)
+    print('saved in `{}`.'.format(loc))
     plt.show()
