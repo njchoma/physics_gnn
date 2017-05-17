@@ -47,7 +47,7 @@ class DirectionnalGaussianKNN(Distance):
 
         value, _ = dist.sort(2)
         k = min(self.k, dist.size()[2])
-        kthvalue = value[:, k, :].unsqueeze(1).expand_as(dist)
+        kthvalue = value[:, :, k].unsqueeze(2).expand_as(dist)
         mask = dist <= kthvalue
 
         return mask
