@@ -29,9 +29,10 @@ def plot_statistics(param, stats=None, figsize=(20, 15)):
         data = read_datafile(statpath(param.statdir, stat))
 
         ax = plt.subplot(len(stats), 1, idx + 1)
-        ax.set_yscale('log')
         ax.plot(data, label=stat)
         ax.legend(loc="upper right")
+        if 'loss' in stat:
+            ax.set_yscale('log')
 
     loc = join(param.statdir, 'stats.png')
     fig.savefig(loc)

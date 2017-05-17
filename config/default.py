@@ -19,7 +19,7 @@ defaultconfig = {
 
     # printing parameters
     'nbdisplay': 2000,
-    'nbstep': 20,
+    'nbstep': 1,
 
     # ploting parameters
     'zoom': [1, 0.1, 0.01, 0.001, 0.0001],
