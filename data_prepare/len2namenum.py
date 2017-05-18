@@ -25,14 +25,14 @@ def len2namenum(is_used, rawdatadir, stdout=None):
 
     # iterate over files
     for filename in h5_files:
-        print_('{: <20} : start'.format(filename), stdout)
+        print_('{: <30} : start'.format(filename), stdout)
         curr_path = os.path.join(rawdatadir, filename)
         with h5.File(curr_path, 'r') as curr_file:
             for event_name in curr_file:
                 if event_name.startswith('event'):
                     length = curr_file[event_name]['clusE'].shape[0]  # number of energy peaks
                     len2namenum[length].append((filename, event_name))
-        print_('{: <20} ... done'.format(filename), stdout)
+        print_('{: <30} ... done'.format(filename), stdout)
 
     # change type of len2namenum to regular dict
     len2namenum = dict(len2namenum)

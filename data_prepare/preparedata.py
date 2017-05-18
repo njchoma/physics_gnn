@@ -72,13 +72,30 @@ def readargs():
     add_arg('--stdout', dest='stdout', default=None,
             help='file to redirect prints')
 
+    add_arg('--wfdone', dest='wfdone', action='store_true',
+            help='when weightfactors are already done')
+    add_arg('--l2nndone', dest='l2nndone', action='store_true',
+            help='when len2namenum are already done')
+
+    # same as two last argument for specific datasets
+
+    add_arg('--wftraindone', dest='wftraindone', action='store_true',
+            help='same as --wfdone but restricted to training set')
+    add_arg('--l2nntraindone', dest='l2nntraindone', action='store_true',
+            help='same as --l2nndone but restricted to training set')
+
+    add_arg('--wftestdone', dest='wftestdone', action='store_true',
+            help='same as --wfdone but restricted to testing set')
+    add_arg('--l2nntestdone', dest='l2nntestdone', action='store_true',
+            help='same as --l2nndone but restricted to testing set')
+
     args = parser.parse_args()
     return args.__dict__
 
 
 # main function to call all other function with one mode
 
-def prepare_data(rawdatadir, datadir, batchsize, datatype, stdout=None):
+def prepare_data(rawdatadir, datadir, batchsize, datatype, args_done, stdout=None):
     print_('\n----- PROCESSING {} DATA -----\n'.format(datatype.upper()), stdout)
 
     # make processed data directory for type `datatype`
@@ -92,24 +109,34 @@ def prepare_data(rawdatadir, datadir, batchsize, datatype, stdout=None):
     is_used = is_test if datatype == 'test' else is_train
 
     # weight renormalizers
-    weight_factors = init_weight_factors(is_used, rawdatadir)
-    with open(join(datadir, 'weightfactors.pkl'), 'wb') as wffile:
-        pickle.dump(weight_factors, wffile, pickle.HIGHEST_PROTOCOL)
-    print_(
-        '\nSaved `weightfactors.pkl` in `{}`\n'.format(datadir) +
-        '\n'.join(
-            '{}: {}'.format(filename, weight_factors[filename])
-            for filename in weight_factors) +
-        '\n' + '-' * 30 + '\n',
-        stdout)
+    if args_done['wfdone']:
+        print_('`weightfactors.pkl` reused for set `{}`'.format(datatype))
+        with open(join(datadir, 'weightfactors.pkl'), 'rb') as wffile:
+            weight_factors = pickle.load(wffile, pickle.HIGHEST_PROTOCOL)
+    else:
+        weight_factors = init_weight_factors(is_used, rawdatadir)
+        with open(join(datadir, 'weightfactors.pkl'), 'wb') as wffile:
+            pickle.dump(weight_factors, wffile, pickle.HIGHEST_PROTOCOL)
+        print_(
+            '\nSaved `weightfactors.pkl` in `{}`\n'.format(datadir) +
+            '\n'.join(
+                '{}: {}'.format(filename, weight_factors[filename])
+                for filename in weight_factors) +
+            '\n' + '-' * 30 + '\n',
+            stdout)
 
     # make and save len2namenum dictionary
-    l2nn = len2namenum(is_used, rawdatadir, stdout)
-    with open(join(datadir, 'len2namenum.pkl'), 'wb') as l2nnfile:
-        pickle.dump(l2nn, l2nnfile, pickle.HIGHEST_PROTOCOL)
-    print_('\nSaved `len2namenum.pkl` in `{}`\n'.format(datadir) +
-           '-' * 30 + '\n',
-           stdout)
+    if args_done['l2nndone']:
+        print_('`len2namenum.pkl` reused for set `{}`'.format(datatype))
+        with open(join(datadir, 'len2namenum.pkl'), 'rb') as l2nnfile:
+            l2nn = pickle.load(l2nnfile, pickle.HIGHEST_PROTOCOL)
+    else:
+        l2nn = len2namenum(is_used, rawdatadir, stdout)
+        with open(join(datadir, 'len2namenum.pkl'), 'wb') as l2nnfile:
+            pickle.dump(l2nn, l2nnfile, pickle.HIGHEST_PROTOCOL)
+        print_('\nSaved `len2namenum.pkl` in `{}`\n'.format(datadir) +
+               '-' * 30 + '\n',
+               stdout)
 
     # organise data
     group_batchs(l2nn, batchsize, weight_factors, rawdatadir, datadir)
@@ -118,18 +145,25 @@ def prepare_data(rawdatadir, datadir, batchsize, datatype, stdout=None):
            stdout)
 
 
+def which_done(args, mode):
+    return {
+        'wfdone': args['wfdone'] or args['wf' + mode + 'done'],
+        'l2nndone': args['l2nndone'] or args['l2nn' + mode + 'done']
+    }
+
+
 # call `prepare_data` on both the training and testing modes
 
-def main(rawdatadir, datadir, batchsize=20, stdout=None):
-    prepare_data(rawdatadir, datadir, batchsize, 'train', stdout)
-    prepare_data(rawdatadir, datadir, batchsize, 'test', stdout)
+def main(args):
+    if args['batchsize'] is None:
+        args['batchsize'] = 20
+
+    prepare_data(args['rawdata'], args['data'], args['batchsize'],
+                 'train', which_done(args, 'train'), args['stdout'])
+    prepare_data(args['rawdata'], args['data'], args['batchsize'],
+                 'test', which_done(args, 'test'), args['stdout'])
 
 
 if __name__ == '__main__':
     args = readargs()
-
-    if args['batchsize'] is None:
-        main(args['rawdata'], args['data'], stdout=args['stdout'])
-    else:
-        main(args['rawdata'], args['data'],
-             batchsize=args['batchsize'], stdout=args['stdout'])
+    main(args)
