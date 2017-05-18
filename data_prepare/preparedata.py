@@ -107,7 +107,8 @@ def prepare_data(rawdatadir, datadir, batchsize, datatype, args_done, stdout=Non
         raise ValueError(
             'Unknown value :`{}` is neither `train` nor `test`'.format(datatype))
     datadir = join(datadir, datatype)
-    makedir_if_not_there(datadir)
+    len2numdir = join(datadir, 'len2num')
+    makedir_if_not_there(len2numdir)  # also makes datadir
 
     # recognise used files
     is_used = is_test if datatype == 'test' else is_train
@@ -135,7 +136,7 @@ def prepare_data(rawdatadir, datadir, batchsize, datatype, args_done, stdout=Non
         with open(join(datadir, 'len2namenum.pkl'), 'rb') as l2nnfile:
             l2nn = pickle.load(l2nnfile, pickle.HIGHEST_PROTOCOL)
     else:
-        l2nn = len2namenum(is_used, rawdatadir, stdout)
+        l2nn = len2namenum(is_used, rawdatadir, len2numdir, stdout, reprocess=False)
         with open(join(datadir, 'len2namenum.pkl'), 'wb') as l2nnfile:
             pickle.dump(l2nn, l2nnfile, pickle.HIGHEST_PROTOCOL)
         print_('\nSaved `len2namenum.pkl` in `{}`\n'.format(datadir) +
