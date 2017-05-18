@@ -24,7 +24,7 @@ def plot_kernel(x, y, adj, fileout=None, dirout='.'):
     G.add_nodes_from(range(n))
 
     # create edges
-    edges = [[i, j, {'w': adj[i, j]}] for i in range(n) for j in range(n) if adj[i, j] != 0 and i > j]
+    edges = [[i, j, {'w': adj[i, j]}] for i in range(n) for j in range(n) if adj[i, j] != 0]
     G.add_edges_from(edges)
     print('-' * 40 +
           '\n{} : {}\n'.format(n, float(len(edges)) / n) +
