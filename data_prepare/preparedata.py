@@ -76,6 +76,10 @@ def readargs():
             help='when weightfactors are already done')
     add_arg('--l2nndone', dest='l2nndone', action='store_true',
             help='when len2namenum are already done')
+    add_arg('--dotrain', dest='dotrain', action='store_true',
+            help='process training set if true')
+    add_arg('--dotest', dest='dotest', action='store_true',
+            help='process testing set if true')
 
     # same as two last argument for specific datasets
 
@@ -158,10 +162,12 @@ def main(args):
     if args['batchsize'] is None:
         args['batchsize'] = 20
 
-    prepare_data(args['rawdata'], args['data'], args['batchsize'],
-                 'train', which_done(args, 'train'), args['stdout'])
-    prepare_data(args['rawdata'], args['data'], args['batchsize'],
-                 'test', which_done(args, 'test'), args['stdout'])
+    if args['dotrain']:
+        prepare_data(args['rawdata'], args['data'], args['batchsize'],
+                     'train', which_done(args, 'train'), args['stdout'])
+    if args['dotest']:
+        prepare_data(args['rawdata'], args['data'], args['batchsize'],
+                     'test', which_done(args, 'test'), args['stdout'])
 
 
 if __name__ == '__main__':
