@@ -67,46 +67,44 @@ def readargs():
             help='path to unprocessed data')
     add_arg('-o', '--data', dest='data', required=True,
             help='path to store processed data')
-    add_arg('--batchsize', dest='batchsize', type=int, default=None,
+    add_arg('--batchsize', dest='batchsize', type=int, default=20,
             help='number of events per batch')
     add_arg('--stdout', dest='stdout', default=None,
             help='file to redirect prints')
 
-    add_arg('--wfdone', dest='wfdone', action='store_true',
-            help='when weightfactors are already done')
-    add_arg('--l2nndone', dest='l2nndone', action='store_true',
-            help='when len2namenum are already done')
     add_arg('--dotrain', dest='dotrain', action='store_true',
             help='process training set if true')
     add_arg('--dotest', dest='dotest', action='store_true',
             help='process testing set if true')
 
-    # same as two last argument for specific datasets
+    add_arg('--wftrain', dest='wftrain', action='store_true',
+            help='run weight factors')
+    add_arg('--l2nntrain', dest='l2nntrain', action='store_true',
+            help='run len2namenum')
+    add_arg('--groupbatchtrain', dest='gbtrain', action='store_true',
+            help='run group_batchs')
 
-    add_arg('--wftraindone', dest='wftraindone', action='store_true',
-            help='same as --wfdone but restricted to training set')
-    add_arg('--l2nntraindone', dest='l2nntraindone', action='store_true',
-            help='same as --l2nndone but restricted to training set')
-
-    add_arg('--wftestdone', dest='wftestdone', action='store_true',
+    add_arg('--wftest', dest='wftest', action='store_true',
             help='same as --wfdone but restricted to testing set')
-    add_arg('--l2nntestdone', dest='l2nntestdone', action='store_true',
+    add_arg('--l2nntest', dest='l2nntest', action='store_true',
             help='same as --l2nndone but restricted to testing set')
+    add_arg('--groupbatchtest', dest='gbtest', action='store_true',
+            help='run group_batchs')
 
     args = parser.parse_args()
-    return args.__dict__
+    return args
 
 
 # main function to call all other function with one mode
 
-def prepare_data(rawdatadir, datadir, batchsize, datatype, args_done, stdout=None):
-    print_('\n----- PROCESSING {} DATA -----\n'.format(datatype.upper()), stdout)
+def prepare_data(datatype, args):
+    print_('\n----- PROCESSING {} DATA -----\n'.format(datatype.upper()), args.stdout)
 
     # make processed data directory for type `datatype`
     if datatype not in ['train', 'test']:
         raise ValueError(
             'Unknown value :`{}` is neither `train` nor `test`'.format(datatype))
-    datadir = join(datadir, datatype)
+    datadir = join(args.datadir, datatype)
     len2numdir = join(datadir, 'len2num')
     makedir_if_not_there(len2numdir)  # also makes datadir
 
@@ -114,12 +112,8 @@ def prepare_data(rawdatadir, datadir, batchsize, datatype, args_done, stdout=Non
     is_used = is_test if datatype == 'test' else is_train
 
     # weight renormalizers
-    if args_done['wfdone']:
-        print_('`weightfactors.pkl` reused for set `{}`'.format(datatype))
-        with open(join(datadir, 'weightfactors.pkl'), 'rb') as wffile:
-            weight_factors = pickle.load(wffile, pickle.HIGHEST_PROTOCOL)
-    else:
-        weight_factors = init_weight_factors(is_used, rawdatadir)
+    if args.__dict__['wf' + datatype]:
+        weight_factors = init_weight_factors(is_used, args.rawdatadir)
         with open(join(datadir, 'weightfactors.pkl'), 'wb') as wffile:
             pickle.dump(weight_factors, wffile, pickle.HIGHEST_PROTOCOL)
         print_(
@@ -128,47 +122,40 @@ def prepare_data(rawdatadir, datadir, batchsize, datatype, args_done, stdout=Non
                 '{}: {}'.format(filename, weight_factors[filename])
                 for filename in weight_factors) +
             '\n' + '-' * 30 + '\n',
-            stdout)
+            args.stdout)
+    else:
+        print_('`weightfactors.pkl` reused for set `{}`'.format(datatype))
+        with open(join(datadir, 'weightfactors.pkl'), 'rb') as wffile:
+            weight_factors = pickle.load(wffile, pickle.HIGHEST_PROTOCOL)
 
     # make and save len2namenum dictionary
-    if args_done['l2nndone']:
+    if args.__dict__['l2nn' + datatype]:
         print_('`len2namenum.pkl` reused for set `{}`'.format(datatype))
         with open(join(datadir, 'len2namenum.pkl'), 'rb') as l2nnfile:
             l2nn = pickle.load(l2nnfile, pickle.HIGHEST_PROTOCOL)
     else:
-        l2nn = len2namenum(is_used, rawdatadir, len2numdir, stdout, reprocess=False)
+        l2nn = len2namenum(is_used, args.rawdatadir, len2numdir, args.stdout, reprocess=False)
         with open(join(datadir, 'len2namenum.pkl'), 'wb') as l2nnfile:
             pickle.dump(l2nn, l2nnfile, pickle.HIGHEST_PROTOCOL)
         print_('\nSaved `len2namenum.pkl` in `{}`\n'.format(datadir) +
                '-' * 30 + '\n',
-               stdout)
+               args.stdout)
 
     # organise data
-    group_batchs(l2nn, batchsize, weight_factors, rawdatadir, datadir)
-    print_('\nFinished organizing {} data.\n'.format(datatype) +
-           '-' * 30 + '\n',
-           stdout)
-
-
-def which_done(args, mode):
-    return {
-        'wfdone': args['wfdone'] or args['wf' + mode + 'done'],
-        'l2nndone': args['l2nndone'] or args['l2nn' + mode + 'done']
-    }
+    if args.__dict__['gb' + datatype]:
+        group_batchs(l2nn, args.batchsize, weight_factors, args.rawdatadir, datadir)
+        print_('\nFinished organizing {} data.\n'.format(datatype) +
+               '-' * 30 + '\n',
+               args.stdout)
 
 
 # call `prepare_data` on both the training and testing modes
 
 def main(args):
-    if args['batchsize'] is None:
-        args['batchsize'] = 20
-
     if args['dotrain']:
-        prepare_data(args['rawdata'], args['data'], args['batchsize'],
-                     'train', which_done(args, 'train'), args['stdout'])
+        prepare_data('train', args)
     if args['dotest']:
-        prepare_data(args['rawdata'], args['data'], args['batchsize'],
-                     'test', which_done(args, 'test'), args['stdout'])
+        prepare_data('test', args)
 
 
 if __name__ == '__main__':
