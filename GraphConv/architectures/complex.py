@@ -6,6 +6,8 @@ from GraphConv.kernel.sparsekernel import DirectionnalGaussianKNN as AdjacencyKN
 from GraphConv.graphlayer.residualgraphconv import ResidualGraphConv as resgconv
 from GraphConv.functional.batchnorm import batchnorm
 
+# from graphic.plotkernel import plot_kernel
+
 
 class RGCs_FCL(nn.Module):
     """implements a Graph Neural Networks to analyse the data from the Large Hadron
@@ -42,6 +44,10 @@ class RGCs_FCL(nn.Module):
 
         # adjacency for GNN
         adj = self.adjacency(phi, eta)
+
+        # img_id = str(torch.rand(1)[0])
+        # img_id = 'kernel' + img_id[2:10] + '.png'
+        # plot_kernel(phi[0, :].data.numpy(), eta[0, :].data.numpy(), adj[0][0, :].data.numpy(), img_id)
 
         # input is a concatenation of e and eta
         eta = batchnorm(eta, axis=1)
