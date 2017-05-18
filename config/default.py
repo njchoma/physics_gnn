@@ -14,8 +14,8 @@ defaultconfig = {
     'loss': 'BCE',
     'lr': 0.0002,
     'lr_thr': 0.98,
-    'lr_update': 0.60,
-    'lr_nbbatch': 20000,
+    'lr_update': 0.8,
+    'lr_nbbatch': 5000,
 
     # printing parameters
     'nbdisplay': 2000,
