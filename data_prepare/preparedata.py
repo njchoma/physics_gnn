@@ -152,9 +152,9 @@ def prepare_data(datatype, args):
 # call `prepare_data` on both the training and testing modes
 
 def main(args):
-    if args['dotrain']:
+    if args.dotrain:
         prepare_data('train', args)
-    if args['dotest']:
+    if args.dotest:
         prepare_data('test', args)
 
 

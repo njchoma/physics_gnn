@@ -73,4 +73,4 @@ class SGDOptimizer(Optimizer):
     """Optimizer instance using Stochastic Gradient Descent"""
 
     def optim(self):
-        self.optimizer = optim.SGD(self.model.net.parameters(), lr=self.model.lr)
+        self.optimizer = optim.SGD(self.model.net.parameters(), lr=self.model.lr, momentum=0.9)

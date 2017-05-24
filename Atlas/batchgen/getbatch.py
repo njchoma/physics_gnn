@@ -72,7 +72,7 @@ class GetBatch:
             weight = batch['weight'][()]  # read weight
             batchsize = batch['batchsize'][()]
 
-        # Maker pytorch Variables
+        # Make pytorch Variables
         energy = Variable(torch.Tensor(energy))
         phi = Variable(torch.Tensor(phi))
         eta = Variable(torch.Tensor(eta))
