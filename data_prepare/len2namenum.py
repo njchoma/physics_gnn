@@ -3,7 +3,6 @@ import h5py as h5
 from collections import defaultdict
 import pickle
 from utils import print_
-from joblib import Parallel, delayed
 import multiprocessing
 
 
@@ -78,8 +77,8 @@ def filelen2nums(is_used, rawdatadir, savedir, stdout=None, reprocess=False):
                     if filename not in processed_files]
 
     # iterate over files
-    num_cores = multiprocessing.cpu_count()
-    Parallel(n_jobs=num_cores)(delayed(_len2num)(filename) for filename in h5_files)
+    pool = multiprocessing.Pool(32)
+    pool.map(_len2num, h5_files)
 
 
 def len2num(rawdatadir, savedir, filename, stdout=None):
