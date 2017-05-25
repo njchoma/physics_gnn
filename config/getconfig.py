@@ -19,9 +19,9 @@ def readargs(project_dir, description):
     # paths and modelname
     add_arg('--model', dest='model',
             help='model name')
-    add_arg('--datadir', dest='datadir', default=join(project_dir, 'data'),
+    add_arg('--datadir', dest='datadir',
             help='path to data')
-    add_arg('--netdir', dest='netdir', default=join(project_dir, 'models'),
+    add_arg('--netdir', dest='netdir',
             help='path to models directory')
     add_arg('--stdout', dest='stdout',
             help='redirects stdout')
@@ -105,8 +105,13 @@ def readargs(project_dir, description):
 
 class Config:
     def __init__(self, project_dir, description='python script used for GNN training or testing'):
-        self.update_default(defaultconfig)
+
+        # default path values
+        self.datadir = join(project_dir, 'data')
+        self.netdir = join(project_dir, 'models')
+
         self.update_default(read_local())
+        self.update_default(defaultconfig)
         param = readargs(project_dir, description)
         self.update(param)
         self.update(hyperparameters())  # code related parameters
