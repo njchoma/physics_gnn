@@ -12,10 +12,10 @@ defaultconfig = {
     # optimizer options
     'optimizer': 'Adam',
     'loss': 'BCE',
-    'lr': 0.0002,
+    'lr': 0.0005,
     'lr_thr': 0.98,
-    'lr_update': 0.8,
-    'lr_nbbatch': 5000,
+    'lr_update': 0.98,
+    'lr_nbbatch': 50000,
 
     # printing parameters
     'nbdisplay': 2000,
