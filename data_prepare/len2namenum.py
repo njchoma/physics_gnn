@@ -64,9 +64,6 @@ def filelen2nums(is_used, rawdatadir, savedir, stdout=None, reprocess=False):
     output: None
     """
 
-    def _len2num(filename):
-        len2num(rawdatadir, savedir, filename, stdout)
-
     # find relevant files
     h5_files = [filename for filename in os.listdir(rawdatadir)
                 if filename.endswith('.h5') and is_used(filename)]
@@ -78,7 +75,17 @@ def filelen2nums(is_used, rawdatadir, savedir, stdout=None, reprocess=False):
 
     # iterate over files
     pool = multiprocessing.Pool(32)
-    pool.map(_len2num, h5_files)
+    pool.map(Copier(rawdatadir, savedir, stdout), h5_files)
+
+
+class Copier:
+    def __init__(self, rawdatadir, savedir, stdout):
+        self.rawdatadir = rawdatadir
+        self.savedir = savedir
+        self.stdout = stdout
+
+    def __call__(self, filename):
+        len2num(self.rawdatadir, self.savedir, filename, self.stdout)
 
 
 def len2num(rawdatadir, savedir, filename, stdout=None):

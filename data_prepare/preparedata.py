@@ -63,9 +63,9 @@ def readargs():
     parser = argparse.ArgumentParser(description=descr)
     add_arg = parser.add_argument
 
-    add_arg('-i', '--rawdata', dest='rawdata', required=True,
+    add_arg('-i', '--rawdata', dest='rawdatadir', required=True,
             help='path to unprocessed data')
-    add_arg('-o', '--data', dest='data', required=True,
+    add_arg('-o', '--data', dest='datadir', required=True,
             help='path to store processed data')
     add_arg('--batchsize', dest='batchsize', type=int, default=20,
             help='number of events per batch')
@@ -130,16 +130,16 @@ def prepare_data(datatype, args):
 
     # make and save len2namenum dictionary
     if args.__dict__['l2nn' + datatype]:
-        print_('`len2namenum.pkl` reused for set `{}`'.format(datatype))
-        with open(join(datadir, 'len2namenum.pkl'), 'rb') as l2nnfile:
-            l2nn = pickle.load(l2nnfile, pickle.HIGHEST_PROTOCOL)
-    else:
         l2nn = len2namenum(is_used, args.rawdatadir, len2numdir, args.stdout, reprocess=False)
         with open(join(datadir, 'len2namenum.pkl'), 'wb') as l2nnfile:
             pickle.dump(l2nn, l2nnfile, pickle.HIGHEST_PROTOCOL)
         print_('\nSaved `len2namenum.pkl` in `{}`\n'.format(datadir) +
                '-' * 30 + '\n',
                args.stdout)
+    else:
+        print_('`len2namenum.pkl` reused for set `{}`'.format(datatype))
+        with open(join(datadir, 'len2namenum.pkl'), 'rb') as l2nnfile:
+            l2nn = pickle.load(l2nnfile, pickle.HIGHEST_PROTOCOL)
 
     # organise data
     if args.__dict__['gb' + datatype]:
