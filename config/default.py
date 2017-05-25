@@ -7,7 +7,7 @@ overwrite those"""
 defaultconfig = {
 
     # training parameters
-    'epoch': 10,
+    'epoch': 50,
 
     # optimizer options
     'optimizer': 'Adam',
