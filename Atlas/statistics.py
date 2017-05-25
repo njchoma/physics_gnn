@@ -16,7 +16,7 @@ class Statistics:
                               text=self.description)
 
         # initiate buffers
-        self.stats = ['loss', 'kernel', 'avg1', 'std1', 'avg0', 'std0']
+        self.stats = ['loss', 'kernel', 'avg0', 'avg1', 'std0', 'std1']
         self.nb_batch_in_buffer = {'train': 0, 'test': 0}
         self.buffer = {'train': dict(), 'test': dict()}
         self._init_buffer('train')
@@ -78,10 +78,13 @@ class Statistics:
 
             self.buffer[mode]['loss'] /= self.param.nbdisplay
             self.buffer[mode]['kernel'] /= self.param.nbdisplay
-            self.buffer[mode]['avg1'] /= self.buffer[mode]['nb_ones']
-            self.buffer[mode]['std1'] = sqrt(self.buffer[mode]['std1'] / self.buffer[mode]['nb_ones'])
-            self.buffer[mode]['avg0'] /= self.buffer[mode]['nb_zero']
-            self.buffer[mode]['std0'] = sqrt(self.buffer[mode]['std0'] / self.buffer[mode]['nb_zero'])
+            if self.buffer[mode]['nb_ones'] > 0:
+                self.buffer[mode]['avg1'] /= self.buffer[mode]['nb_ones']
+                self.buffer[mode]['std1'] = sqrt(self.buffer[mode]['std1'] / self.buffer[mode]['nb_ones'])
+
+            if self.buffer[mode]['nb_zero'] > 0:
+                self.buffer[mode]['avg0'] /= self.buffer[mode]['nb_zero']
+                self.buffer[mode]['std0'] = sqrt(self.buffer[mode]['std0'] / self.buffer[mode]['nb_zero'])
 
             if mode == 'train':
                 for stat in self.stats:
