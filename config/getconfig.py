@@ -15,6 +15,8 @@ def readargs(project_dir, description):
             help="'test', 'train', 'description', 'plot', prepare_data', 'weight_average'")
     add_arg('--datatype', dest='datatype',
             help="'train' or 'test': type of data observed")
+    add_arg('--newparam', dest='newparam', action='store_true',
+            default=False, help='change parameters when recovered')
 
     # paths and modelname
     add_arg('--model', dest='model',

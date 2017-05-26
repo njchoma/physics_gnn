@@ -18,7 +18,8 @@ def get_model(param, stdout=None):
         with open(modelpath, 'rb') as filein:
             model = pickle.Unpickler(filein).load()
         retrieved = True
-        model.newparameters(param, stdout=stdout)
+        if model.newparam:
+            model.newparameters(param, stdout=stdout)
     else:
         if param.mode != 'train':  # file shouldn't be created
             raise OSError('invalid path : {}'.format(modelpath))
