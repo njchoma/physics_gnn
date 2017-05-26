@@ -11,7 +11,7 @@ class Statistics:
         self.stdout = stdout
 
         # initiate description
-        self.description = makedescription(param, nbnetparam, parameters_used)
+        self.description = makedescription(param, nbnetparam)
         makefile_if_not_there(self.param.netdir, 'description.txt',
                               text=self.description)
 
@@ -29,6 +29,11 @@ class Statistics:
 
         # initiate train counter
         self.nb_events_seen = {'train': 0, 'test': 0}
+
+    def newparameters(self, param, nbnetparam, stdout=None):
+        self.param = param
+        self.stdout = stdout
+        self.description = makedescription(param, nbnetparam)
 
     def update(self, mode, output, labels, loss_step, kernel_std):
         self.nb_events_seen[mode] += labels.numel()
@@ -137,7 +142,7 @@ class Statistics:
         print_(descr, self.stdout)
 
 
-def makedescription(param, nbnetparam, parameters_used):
+def makedescription(param, nbnetparam):
     descr = '{} :\n'.format(param.model) + '-' * 20 + '\n'
     descr = descr + '\n'.join('{}: {}'.format(parameter, param.__dict__[parameter]) for parameter in param.__dict__.keys())
 

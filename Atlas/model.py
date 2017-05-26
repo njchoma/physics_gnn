@@ -35,8 +35,8 @@ class Model:
 
     def newparameters(self, param, stdout=None):
         self.param = param
-        self.statistics.param = param
-        self.statistics.stdout = stdout
+        nbnetparameters = sum(param.numel() for param in self.net.parameters())
+        self.statistics.newparameters(param, nbnetparameters, stdout)
 
     def cuda(self):
         self.net.cuda()

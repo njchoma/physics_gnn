@@ -9,8 +9,7 @@ import utils.choose_options as choose
 
 def train_or_test(param, stdout=None):
     # Retrieve of initialize model
-    model, ret = get_model(param, stdout=stdout)
-    print_(('retrieved' if ret else 'created') + ' model', stdout=stdout)
+    model = get_model(param, stdout=stdout)
     model.printdescr(stdout=stdout)
 
     criterion = choose.loss(param.loss)

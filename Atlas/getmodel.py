@@ -2,9 +2,10 @@ import pickle
 from os.path import join, exists
 from utils.files import makedir_if_not_there
 from Atlas.model import Model
+from utils.files import print_
 
 
-# EDIT : change pikle to torch.save
+# EDIT : change pickle to torch.save
 
 def get_model(param, stdout=None):
     """Retrieves existing model. For training, missing model will
@@ -35,4 +36,5 @@ def get_model(param, stdout=None):
         if model.is_cuda:
             model.cpu()
 
-    return (model, retrieved)
+    print_(('retrieved' if retrieved else 'created') + ' model', stdout=stdout)
+    return model
