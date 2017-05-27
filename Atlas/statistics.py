@@ -39,13 +39,13 @@ class Statistics:
         self.nb_events_seen[mode] += labels.numel()
 
         # update step loss
-        self.steploss += loss_step
-        self.steps += 1
-        if self.steps >= self.param.nbstep:
-            if mode == 'train':
+        if mode == 'train':
+            self.steploss += loss_step
+            self.steps += 1
+            if self.steps >= self.param.nbstep:
                 self.write_stat('loss_step', loss_step / self.param.nbstep)
-            self.steploss = 0.0
-            self.steps = 0
+                self.steploss = 0.0
+                self.steps = 0
 
         nb_ones = labels.sum()
         output_avg_ones = (output * labels).sum()
@@ -79,10 +79,9 @@ class Statistics:
         # update counter, write in files if enough batches in buffer
         self.nb_batch_in_buffer[mode] += 1
         if self.nb_batch_in_buffer[mode] >= self.param.nbdisplay:
-            self.nb_batch_in_buffer[mode] = 0
-
             self.buffer[mode]['loss'] /= self.param.nbdisplay
             self.buffer[mode]['kernel'] /= self.param.nbdisplay
+
             if self.buffer[mode]['nb_ones'] > 0:
                 self.buffer[mode]['avg1'] /= self.buffer[mode]['nb_ones']
                 self.buffer[mode]['std1'] = sqrt(self.buffer[mode]['std1'] / self.buffer[mode]['nb_ones'])
@@ -95,11 +94,20 @@ class Statistics:
                 for stat in self.stats:
                     self.write_stat(stat, self.buffer[mode][stat])
 
-            # print average stats
-            print_('{: >10} events : '.format(self.nb_events_seen[mode]) +
-                   ' - '.join('{}: {:.2E}'.format(stat, self.buffer[mode][stat])
-                              for stat in self.stats),
-                   stdout=self.stdout if mode == 'train' else None)
+                # print average stats
+                print_(
+                    '{: >10} events : '.format(self.nb_events_seen[mode]) +
+                    ' - '.join('{}: {:.2E}'.format(
+                        stat, self.buffer[mode][stat])
+                        for stat in self.stats),
+                    stdout=self.stdout)
+
+            else:
+                print_(
+                    '{: >10} events : '.format(self.nb_events_seen[mode]) +
+                    ' - '.join('{}: {:.2E}'.format(
+                        stat, self.buffer[mode][stat])
+                        for stat in self.stats if 'loss' not in stat))
 
             # Restart buffers
             self._init_buffer(mode)
@@ -110,6 +118,7 @@ class Statistics:
             makefile_if_not_there(self.param.statdir, '{}.csv'.format(stat))
 
     def _init_buffer(self, mode):
+        self.nb_batch_in_buffer[mode] = 0
         self.nb_ones = 0
         self.nb_zero = 0
         for stat in self.stats:
