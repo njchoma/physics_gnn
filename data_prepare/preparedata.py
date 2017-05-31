@@ -63,6 +63,8 @@ def readargs():
     parser = argparse.ArgumentParser(description=descr)
     add_arg = parser.add_argument
 
+    add_arg('--project', dest='project', required=True,
+            help='type of data to be organized : `nersc` or `nyu`')
     add_arg('-i', '--rawdata', dest='rawdatadir', required=True,
             help='path to unprocessed data')
     add_arg('-o', '--data', dest='datadir', required=True,
@@ -98,6 +100,21 @@ def readargs():
 # main function to call all other function with one mode
 
 def prepare_data(datatype, args):
+    # get names of datasets to copy
+    if args.project == 'nersc':
+        datasets = [
+            ('clusE', 'E'), ('clusEM', 'EM'),
+            ('clusPhi', 'Phi'), ('clusEta', 'Eta')]
+        datasetnormalize = ['clusE', 'clusEM']
+        normalize_weights = True
+    elif args.project == 'nyu':
+        raise NotImplementedError('Please provide dataset names to be transfered in `preparedata.py`, instead of this error')
+        datasets = []
+        datasetnormalize = []
+        normalize_weights = False
+    else:
+        raise ValueError('--project should be `nersc` or `nyu`')
+
     print_('\n----- PROCESSING {} DATA -----\n'.format(datatype.upper()), args.stdout)
 
     # make processed data directory for type `datatype`
@@ -143,7 +160,10 @@ def prepare_data(datatype, args):
 
     # organise data
     if args.__dict__['gb' + datatype]:
-        group_batchs(l2nn, args.batchsize, weight_factors, args.rawdatadir, datadir)
+        group_batchs(l2nn,
+                     datasets, datasetnormalize,
+                     args.batchsize, weight_factors,
+                     args.rawdatadir, datadir)
         print_('\nFinished organizing {} data.\n'.format(datatype) +
                '-' * 30 + '\n',
                args.stdout)

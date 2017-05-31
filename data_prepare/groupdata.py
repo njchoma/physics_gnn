@@ -24,9 +24,12 @@ def batchnorm(x, axis=0):
 class BatchGroup:
     """Creates and fills each group (representing a batch) and dataset"""
 
-    def __init__(self, batchsize, weight_factors,
+    def __init__(self, datasets, datasetnormalize,
+                 batchsize, weight_factors,
                  rawdatadir, datafile,
                  namenum, length, batch_idx, stdout):
+        self.datasets = datasets  # datasets that will be transfered, other than ´weight´ and ´label´
+        self.datasetnormalize = datasetnormalize  # included in self.datasets, thos will be normalized
         self.namenum = namenum
         self.length = length
         self.batchsizes = self._balance_batchs(batchsize)
@@ -68,10 +71,8 @@ class BatchGroup:
         # create group structure
         with h5.File(self.datafile, 'a') as fileout:
             group = fileout.create_group(self.group_name)
-            group.create_dataset('E', shape=(curr_batchsize, self.length))
-            group.create_dataset('EM', shape=(curr_batchsize, self.length))
-            group.create_dataset('eta', shape=(curr_batchsize, self.length))
-            group.create_dataset('phi', shape=(curr_batchsize, self.length))
+            for _, dataset_newname in self.datasets:
+                group.create_dataset(dataset_newname, shape=(curr_batchsize, self.length))
             group.create_dataset('label', shape=(curr_batchsize,))
             group.create_dataset('weight', shape=(curr_batchsize,))
 
@@ -91,22 +92,19 @@ class BatchGroup:
 
         # read from raw data file
         with h5.File(os.path.join(self.rawdatadir, filename), 'r') as filein:
-            E = filein[event_num]['clusE'].value
-            EM = filein[event_num]['clusEM'].value
-            eta = filein[event_num]['clusEta'].value
-            phi = filein[event_num]['clusPhi'].value
+            dataset_values = {
+                dataset: filein[event_num][dataset].value
+                for dataset, _ in self.datasets}
             weight = filein[event_num]['weight'].value
 
         # modifications on data
-        E = batchnorm(E)
-        EM = batchnorm(EM)
+        for dataset in self.datasetnormalize:
+            dataset_values[dataset] = batchnorm(dataset_values[dataset])
         weight = weight / self.weight_factors[filename]
 
         # write in new data file
-        fileout[self.group_name + '/EM'][self.event_idx, :] = EM
-        fileout[self.group_name + '/E'][self.event_idx, :] = E
-        fileout[self.group_name + '/eta'][self.event_idx, :] = eta
-        fileout[self.group_name + '/phi'][self.event_idx, :] = phi
+        for dataset, dataset_newname in self.datasets:
+            fileout[self.group_name][dataset_newname][self.event_idx, :] = dataset_values[dataset]
         fileout[self.group_name + '/weight'][self.event_idx] = weight
         fileout[self.group_name + '/label'][self.event_idx] = label
 
@@ -123,7 +121,9 @@ class BatchGroup:
         return self.batch_idx, self.count_events
 
 
-def group_batchs(len2namenum, batchsize, weight_factors,
+def group_batchs(len2namenum,
+                 datasets, datasetnormalize,
+                 batchsize, weight_factors,
                  rawdatadir, datadir, stdout=None):
     """reads from len2namenum dictionary and randomly groups events of
     same length into batchs"""
@@ -137,6 +137,7 @@ def group_batchs(len2namenum, batchsize, weight_factors,
 
     for length in len2namenum.keys():
         organizer = BatchGroup(
+            datasets, datasetnormalize,
             batchsize, weight_factors,
             rawdatadir, datafile,
             len2namenum[length], length, curr_batch_idx, stdout
