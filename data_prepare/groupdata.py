@@ -62,11 +62,11 @@ class BatchGroup:
         # initialise batch variables
         self.event_idx = 0
         self.group_name = 'batch{}'.format(self.batch_idx)
-        if self.batch_idx % 100 == 0:
+        if self.batch_idx % 500 == 0:
             print_(self.group_name, self.stdout)
 
         # create group structure
-        with h5.File(self.datafile, 'w') as fileout:
+        with h5.File(self.datafile, 'a') as fileout:
             group = fileout.create_group(self.group_name)
             group.create_dataset('E', shape=(curr_batchsize, self.length))
             group.create_dataset('EM', shape=(curr_batchsize, self.length))
@@ -128,7 +128,10 @@ def group_batchs(len2namenum, batchsize, weight_factors,
     """reads from len2namenum dictionary and randomly groups events of
     same length into batchs"""
 
-    datafile = os.path.join(datadir, 'data.h5')
+    datafile = os.path.join(datadir, 'data.h5')  # must be cleared
+    with h5.File(datafile, 'w') as fileout:
+        pass
+
     curr_batch_idx, total_count_events = 0, 0
     print_('organizing data from `{}` to `{}`.'.format(rawdatadir, datafile), stdout)
 
@@ -141,6 +144,6 @@ def group_batchs(len2namenum, batchsize, weight_factors,
         curr_batch_idx, count_events = organizer.iter_data()
         total_count_events += count_events
 
-    with h5.File(datafile, 'w') as fileout:
+    with h5.File(datafile, 'a') as fileout:
         fileout.create_dataset('nb_batch', data=curr_batch_idx)
         fileout.create_dataset('nb_events', data=total_count_events)
