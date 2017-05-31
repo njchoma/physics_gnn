@@ -2,10 +2,10 @@ from os.path import join
 import pickle
 from utils.files import makefile_if_not_there, print_
 
-from Atlas.batchgen.getbatch import GetBatch
-from Atlas.statistics import Statistics
-from Atlas.batchgen.weightfunc import getweightfunc
-from Atlas.choose_model import init_model_type
+from Atlas_nersc.batchgen.getbatch import GetBatch
+from Atlas_nersc.statistics import Statistics
+from Atlas_nersc.batchgen.weightfunc import getweightfunc
+from Atlas_nersc.choose_model import init_model_type
 
 from graphic.roccurve import ROCCurve
 

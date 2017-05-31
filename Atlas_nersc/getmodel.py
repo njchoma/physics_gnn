@@ -1,7 +1,7 @@
 import pickle
 from os.path import join, exists
 from utils.files import makedir_if_not_there
-from Atlas.model import Model
+from Atlas_nersc.model import Model
 from utils.files import print_
 
 

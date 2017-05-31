@@ -2,7 +2,7 @@ import sys
 from os.path import join, abspath, pardir
 from utils.files import makefile_if_not_there, print_
 from config.getconfig import Config
-from Atlas.getmodel import get_model
+from Atlas_nersc.getmodel import get_model
 from graphic.plotstats import plot_statistics
 import utils.choose_options as choose
 
