@@ -126,7 +126,7 @@ def prepare_data(datatype, args):
     else:
         print_('`weightfactors.pkl` reused for set `{}`'.format(datatype))
         with open(join(datadir, 'weightfactors.pkl'), 'rb') as wffile:
-            weight_factors = pickle.load(wffile, pickle.HIGHEST_PROTOCOL)
+            weight_factors = pickle.load(wffile)
 
     # make and save len2namenum dictionary
     if args.__dict__['l2nn' + datatype]:
@@ -139,7 +139,7 @@ def prepare_data(datatype, args):
     else:
         print_('`len2namenum.pkl` reused for set `{}`'.format(datatype))
         with open(join(datadir, 'len2namenum.pkl'), 'rb') as l2nnfile:
-            l2nn = pickle.load(l2nnfile, pickle.HIGHEST_PROTOCOL)
+            l2nn = pickle.load(l2nnfile)
 
     # organise data
     if args.__dict__['gb' + datatype]:

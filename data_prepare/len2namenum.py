@@ -37,7 +37,7 @@ def len2namenum(is_used, rawdatadir, savedir, stdout=None, reprocess=False):
     # gather in len2namenum
     for filename in processed_files:
         with open(os.path.join(savedir, filename), 'rb') as l2nfile:
-            len2num = pickle.load(l2nfile, pickle.HIGHEST_PROTOCOL)
+            len2num = pickle.load(l2nfile)
         for length, num in len2num.items():
             len2namenum[length].extend(add_name_to_iter(filename, num))
 

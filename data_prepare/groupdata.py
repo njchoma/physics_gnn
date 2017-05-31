@@ -124,7 +124,7 @@ class BatchGroup:
 
 
 def group_batchs(len2namenum, batchsize, weight_factors,
-                 rawdatadir, datadir, stdout):
+                 rawdatadir, datadir, stdout=None):
     """reads from len2namenum dictionary and randomly groups events of
     same length into batchs"""
 
