@@ -1,6 +1,6 @@
 from os.path import join
 import argparse
-from file2weightfactor import init_weight_factors
+from file2weightfactor import init_weight_factors, NoWeightFactor
 from len2namenum import len2namenum
 from groupdata import group_batchs
 from utils import makedir_if_not_there, print_
@@ -129,21 +129,24 @@ def prepare_data(datatype, args):
     is_used = is_test if datatype == 'test' else is_train
 
     # weight renormalizers
-    if args.__dict__['wf' + datatype]:
-        weight_factors = init_weight_factors(is_used, args.rawdatadir)
-        with open(join(datadir, 'weightfactors.pkl'), 'wb') as wffile:
-            pickle.dump(weight_factors, wffile, pickle.HIGHEST_PROTOCOL)
-        print_(
-            '\nSaved `weightfactors.pkl` in `{}`\n'.format(datadir) +
-            '\n'.join(
-                '{}: {}'.format(filename, weight_factors[filename])
-                for filename in weight_factors) +
-            '\n' + '-' * 30 + '\n',
-            args.stdout)
+    if normalize_weights:
+        if args.__dict__['wf' + datatype]:
+            weight_factors = init_weight_factors(is_used, args.rawdatadir)
+            with open(join(datadir, 'weightfactors.pkl'), 'wb') as wffile:
+                pickle.dump(weight_factors, wffile, pickle.HIGHEST_PROTOCOL)
+            print_(
+                '\nSaved `weightfactors.pkl` in `{}`\n'.format(datadir) +
+                '\n'.join(
+                    '{}: {}'.format(filename, weight_factors[filename])
+                    for filename in weight_factors) +
+                '\n' + '-' * 30 + '\n',
+                args.stdout)
+        else:
+            print_('`weightfactors.pkl` reused for set `{}`'.format(datatype))
+            with open(join(datadir, 'weightfactors.pkl'), 'rb') as wffile:
+                weight_factors = pickle.load(wffile)
     else:
-        print_('`weightfactors.pkl` reused for set `{}`'.format(datatype))
-        with open(join(datadir, 'weightfactors.pkl'), 'rb') as wffile:
-            weight_factors = pickle.load(wffile)
+        weight_factors = NoWeightFactor()
 
     # make and save len2namenum dictionary
     if args.__dict__['l2nn' + datatype]:

@@ -60,3 +60,19 @@ def init_weight_factors(is_used, rawdatadir):
     }
 
     return file2weightfactor
+
+
+class NoWeightFactor:
+    """
+    Provides a false directory to be used if no weight
+    renormalization is required : NoWeightFactor()[file]
+    returns 1 independently of the file
+    """
+    def __init__(self):
+        print(
+            '-' * 33 +
+            "\n-- weights won't be normalized --\n" +
+            '-' * 33)
+
+    def __getitem__(self, item):
+        return 1.
