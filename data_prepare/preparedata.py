@@ -1,10 +1,11 @@
 from os.path import join
 import argparse
+import pickle
+from utils import makedir_if_not_there, print_
 from file2weightfactor import init_weight_factors, NoWeightFactor
 from len2namenum import len2namenum
+from normalizefeatures import global_stats
 from groupdata import group_batchs
-from utils import makedir_if_not_there, print_
-import pickle
 
 
 """Recovers data from a `rawdatadir` directory, selects usefull pieces of data
@@ -85,6 +86,9 @@ def readargs():
             help='run len2namenum')
     add_arg('--groupbatchtrain', dest='gbtrain', action='store_true',
             help='run group_batchs')
+    add_arg('--statstrain', dest='statstrain', action='store_true',
+            help='run normalizefeature')
+
 
     add_arg('--wftest', dest='wftest', action='store_true',
             help='same as --wfdone but restricted to testing set')
@@ -124,6 +128,8 @@ def prepare_data(datatype, args):
     datadir = join(args.datadir, datatype)
     len2numdir = join(datadir, 'len2num')
     makedir_if_not_there(len2numdir)  # also makes datadir
+    statsdir = join(datadir, 'stats')
+    makedir_if_not_there(statsdir)
 
     # recognise used files
     is_used = is_test if datatype == 'test' else is_train
@@ -160,6 +166,22 @@ def prepare_data(datatype, args):
         print_('`len2namenum.pkl` reused for set `{}`'.format(datatype))
         with open(join(datadir, 'len2namenum.pkl'), 'rb') as l2nnfile:
             l2nn = pickle.load(l2nnfile)
+
+    # compute mean and variance for each feature
+#    if datatype == 'train' & args.statstrain:
+#        stats = global_stats(
+#            is_used, args.rawdatadir, statsdir,
+#            args.stdout, reprocess=False
+#        )
+#        with open(join(datadir, 'stats.pkl'), 'wb') as statsfile:
+#            pickle.dump(stats, statsfile, pickle.HIGHEST_PROTOCOL)
+#        print_('\nSaved `stats.pkl` in `{}`\n'.format(datadir) +
+#               '-' * 30 + '\n',
+#               args.stdout)
+#    else:
+#        print_('`stats.pkl` reused for set `{}`'.format(datatype))
+#        with open(join(join(args.datadir, 'train'), 'stats.pkl'), 'rb') as statsfile:
+#            stats = pickle.load(l2nnfile)
 
     # organise data
     if args.__dict__['gb' + datatype]:
