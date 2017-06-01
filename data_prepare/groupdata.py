@@ -88,7 +88,6 @@ class BatchGroup:
         """reads and organize from next event"""
 
         filename, event_num = self.namenum.pop()
-        label = 'GG' in filename
 
         # read from raw data file
         with h5.File(os.path.join(self.rawdatadir, filename), 'r') as filein:
@@ -96,6 +95,11 @@ class BatchGroup:
                 dataset: filein[event_num][dataset].value
                 for dataset, _ in self.datasets}
             weight = filein[event_num]['weight'].value
+
+            if "label" in filein[event_num].attrs:
+                label = filein[event_num].attrs["label"]
+            else:
+                label = 'GG' in filename
 
         # modifications on data
         for dataset in self.datasetnormalize:

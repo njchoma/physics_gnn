@@ -97,7 +97,10 @@ def len2num(rawdatadir, savedir, filename, stdout=None):
     with h5.File(curr_path, 'r') as curr_file:
         for event_name in curr_file:
             if event_name.startswith('event'):
-                length = curr_file[event_name]['clusE'].shape[0]  # number of energy peaks
+                if "jet_length" in curr_file[event_name].attrs:
+                    length = curr_file[event_name].attrs["jet_length"]
+                else:
+                    length = curr_file[event_name]['clusE'].shape[0]  # number of energy peaks
                 len2num[length].append(event_name)
 
     len2num = dict(len2num)  # change type

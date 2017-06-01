@@ -108,8 +108,8 @@ def prepare_data(datatype, args):
         datasetnormalize = ['clusE', 'clusEM']
         normalize_weights = True
     elif args.project == 'nyu':
-        raise NotImplementedError('Please provide dataset names to be transfered in `preparedata.py`, instead of this error')
-        datasets = []
+        datasets = [('p', 'p'), ('eta', 'eta'), ('phi', 'phi'), ('E', 'E'),
+                    ('pt', 'pt'), ('theta', 'theta')]
         datasetnormalize = []
         normalize_weights = False
     else:
