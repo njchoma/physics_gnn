@@ -9,6 +9,7 @@ def batchnorm(x, axis=0):
     input : x variable of size batch * 1 * n * d_out
     output : y = (x - E(x)) / sqrt(var(x)) of same size
     """
+    # EDIT : this needs to be changed and to use a global mean and variance
 
     # Compute empirical expectancy and substract
     ex = x.mean(axis)  # axis representing the event length
@@ -28,8 +29,10 @@ class BatchGroup:
                  batchsize, weight_factors,
                  rawdatadir, datafile,
                  namenum, length, batch_idx, stdout):
-        self.datasets = datasets  # datasets that will be transfered, other than ´weight´ and ´label´
-        self.datasetnormalize = datasetnormalize  # included in self.datasets, thos will be normalized
+        self.datasets = datasets
+        # datasets that will be transfered, other than 'weight' and 'label'
+        self.datasetnormalize = datasetnormalize
+        # included in self.datasets, thos will be normalized
         self.namenum = namenum
         self.length = length
         self.batchsizes = self._balance_batchs(batchsize)
@@ -40,6 +43,8 @@ class BatchGroup:
         self.stdout = stdout
 
         self.count_events = 0
+        self.event_idx = None
+        self.group_name = None
 
     def randomize_events(self):
         self.namenum = np.random.permutation(self.namenum)
@@ -51,7 +56,7 @@ class BatchGroup:
         nb_batch = int(float(size) / float(batchsize) + 0.5)  # rounding (positive)
         leftovers = size - nb_batch * batchsize
         res = []
-        for i in range(nb_batch):
+        for _ in range(nb_batch):
             extra = leftovers // nb_batch  # extra event for this batch
             leftovers -= extra
             nb_batch -= 1

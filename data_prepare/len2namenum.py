@@ -1,8 +1,8 @@
 import os
-import h5py as h5
 from collections import defaultdict
 import pickle
 from utils import print_
+import h5py as h5
 import multiprocessing
 
 
@@ -62,7 +62,7 @@ def filelen2nums(is_used, rawdatadir, savedir, stdout=None, reprocess=False):
             - `reprocess` (optionnal) : if false, existant files in `savedir`
                     wont be reprocessed
 
-    output: None
+    output: saves len2nums dictionnarys for each file
     """
 
     # find relevant files
