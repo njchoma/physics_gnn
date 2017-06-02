@@ -115,4 +115,4 @@ def filewise_stats(rawdatadir, savedir, filename, stdout=None):
     savename = os.path.splitext(filename)[0] + '.pkl'
     with open(os.path.join(savedir, savename), 'wb') as fileout:
         pickle.dump(stats, fileout, pickle.HIGHEST_PROTOCOL)
-    print_('{: <30} ... saved'.format(filename), stdout)
+    print_('{: <30} ... saved : {}'.format(filename, stats), stdout)

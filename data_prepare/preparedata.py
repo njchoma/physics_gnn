@@ -179,20 +179,20 @@ def prepare_data(datatype, args):
             l2nn = pickle.load(l2nnfile)
 
     # compute mean and variance for each feature
-#    if datatype == 'train' & args.statstrain:
-#        stats = global_stats(
-#            is_used, args.rawdatadir, statsdir,
-#            args.stdout, reprocess=False
-#        )
-#        with open(join(datadir, 'stats.pkl'), 'wb') as statsfile:
-#            pickle.dump(stats, statsfile, pickle.HIGHEST_PROTOCOL)
-#        print_('\nSaved `stats.pkl` in `{}`\n'.format(datadir) +
-#               '-' * 30 + '\n',
-#               args.stdout)
-#    else:
-#        print_('`stats.pkl` reused for set `{}`'.format(datatype))
-#        with open(join(join(args.datadir, 'train'), 'stats.pkl'), 'rb') as statsfile:
-#            stats = pickle.load(l2nnfile)
+    if (datatype == 'train') & args.statstrain:
+        stats = global_stats(
+            is_used, args.rawdatadir, statsdir,
+            args.stdout, reprocess=False
+        )
+        with open(join(datadir, 'stats.pkl'), 'wb') as statsfile:
+            pickle.dump(stats, statsfile, pickle.HIGHEST_PROTOCOL)
+        print_('\nSaved `stats.pkl` in `{}`\n'.format(datadir) +
+               '-' * 30 + '\n',
+               args.stdout)
+    else:
+        print_('`stats.pkl` reused for set `{}`'.format(datatype))
+        with open(join(join(args.datadir, 'train'), 'stats.pkl'), 'rb') as statsfile:
+            stats = pickle.load(l2nnfile)
 
     # organise data
     if args.__dict__['gb' + datatype]:
