@@ -44,7 +44,7 @@ and transfers it to a `datadir` directory according to the following format :
 
 # Some functions to seperate training data from testing data
 
-def is_test(filename):
+def is_test_nersc(filename):
     if not(filename.endswith('.h5')):
         raise ValueError('`{}` is not an hdf5 file.'.format(filename))
     filename = filename.split('.')[0]  # removes `.h5` extension
@@ -52,8 +52,16 @@ def is_test(filename):
     return (fileid == '01')
 
 
-def is_train(filename):
-    return not(is_test(filename))
+def is_train_nersc(filename):
+    return not(is_test_nersc(filename))
+
+
+def is_test_nyu(filename):
+    return ('test' in filename)
+
+
+def is_train_nyu(filename):
+    return not(is_test_nyu(filename))
 
 
 # A function to read `stdin` and recover arguments
@@ -84,10 +92,10 @@ def readargs():
             help='run weight factors')
     add_arg('--l2nntrain', dest='l2nntrain', action='store_true',
             help='run len2namenum')
-    add_arg('--groupbatchtrain', dest='gbtrain', action='store_true',
-            help='run group_batchs')
     add_arg('--statstrain', dest='statstrain', action='store_true',
             help='run normalizefeature')
+    add_arg('--groupbatchtrain', dest='gbtrain', action='store_true',
+            help='run group_batchs')
 
 
     add_arg('--wftest', dest='wftest', action='store_true',
@@ -104,18 +112,24 @@ def readargs():
 # main function to call all other function with one mode
 
 def prepare_data(datatype, args):
+    """preprocess one dataset, either train or test"""
+
     # get names of datasets to copy
     if args.project == 'nersc':
         datasets = [
             ('clusE', 'E'), ('clusEM', 'EM'),
             ('clusPhi', 'Phi'), ('clusEta', 'Eta')]
         datasetnormalize = ['clusE', 'clusEM']
+        attributes = []
         normalize_weights = True
+        is_used = is_test_nersc if datatype == 'test' else is_train_nersc  # recognise used files
     elif args.project == 'nyu':
         datasets = [('p', 'p'), ('eta', 'eta'), ('phi', 'phi'), ('E', 'E'),
                     ('pt', 'pt'), ('theta', 'theta')]
         datasetnormalize = []
+        attributes = ['jet_phi', 'jet_pt', 'jet_energy', 'jet_eta', 'jet_mass', 'jet_length']
         normalize_weights = False
+        is_used = is_test_nyu if datatype == 'test' else is_train_nyu  # recognise used files
     else:
         raise ValueError('--project should be `nersc` or `nyu`')
 
@@ -130,9 +144,6 @@ def prepare_data(datatype, args):
     makedir_if_not_there(len2numdir)  # also makes datadir
     statsdir = join(datadir, 'stats')
     makedir_if_not_there(statsdir)
-
-    # recognise used files
-    is_used = is_test if datatype == 'test' else is_train
 
     # weight renormalizers
     if normalize_weights:
@@ -186,7 +197,7 @@ def prepare_data(datatype, args):
     # organise data
     if args.__dict__['gb' + datatype]:
         group_batchs(l2nn,
-                     datasets, datasetnormalize,
+                     datasets, datasetnormalize, attributes,
                      args.batchsize, weight_factors,
                      args.rawdatadir, datadir)
         print_('\nFinished organizing {} data.\n'.format(datatype) +
@@ -204,5 +215,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    args = readargs()
-    main(args)
+    main(readargs())

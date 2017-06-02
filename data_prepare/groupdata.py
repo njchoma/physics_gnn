@@ -25,7 +25,7 @@ def batchnorm(x, axis=0):
 class BatchGroup:
     """Creates and fills each group (representing a batch) and dataset"""
 
-    def __init__(self, datasets, datasetnormalize,
+    def __init__(self, datasets, datasetnormalize, attributes,
                  batchsize, weight_factors,
                  rawdatadir, datafile,
                  namenum, length, batch_idx, stdout):
@@ -33,6 +33,7 @@ class BatchGroup:
         # datasets that will be transfered, other than 'weight' and 'label'
         self.datasetnormalize = datasetnormalize
         # included in self.datasets, thos will be normalized
+        self.attributes = attributes  # attributes to be transfered
         self.namenum = namenum
         self.length = length
         self.batchsizes = self._balance_batchs(batchsize)
@@ -70,7 +71,7 @@ class BatchGroup:
         # initialise batch variables
         self.event_idx = 0
         self.group_name = 'batch{}'.format(self.batch_idx)
-        if self.batch_idx % 500 == 0:
+        if self.batch_idx % 50 == 0:
             print_(self.group_name, self.stdout)
 
         # create group structure
@@ -78,6 +79,8 @@ class BatchGroup:
             group = fileout.create_group(self.group_name)
             for _, dataset_newname in self.datasets:
                 group.create_dataset(dataset_newname, shape=(curr_batchsize, self.length))
+            for attribute in self.attributes:
+                group.create_dataset(attribute, shape=(curr_batchsize,))
             group.create_dataset('label', shape=(curr_batchsize,))
             group.create_dataset('weight', shape=(curr_batchsize,))
 
@@ -99,6 +102,9 @@ class BatchGroup:
             dataset_values = {
                 dataset: filein[event_num][dataset].value
                 for dataset, _ in self.datasets}
+            attribute_values = {
+                attribute: filein[event_num].attrs[attribute]
+                for attribute in self.attributes}
             weight = filein[event_num]['weight'].value
 
             if "label" in filein[event_num].attrs:
@@ -114,6 +120,8 @@ class BatchGroup:
         # write in new data file
         for dataset, dataset_newname in self.datasets:
             fileout[self.group_name][dataset_newname][self.event_idx, :] = dataset_values[dataset]
+        for attribute in self.attributes:
+            fileout[self.group_name][attribute][self.event_idx] = attribute_values[attribute]
         fileout[self.group_name + '/weight'][self.event_idx] = weight
         fileout[self.group_name + '/label'][self.event_idx] = label
 
@@ -131,7 +139,7 @@ class BatchGroup:
 
 
 def group_batchs(len2namenum,
-                 datasets, datasetnormalize,
+                 datasets, datasetnormalize, attributes,
                  batchsize, weight_factors,
                  rawdatadir, datadir, stdout=None):
     """reads from len2namenum dictionary and randomly groups events of
@@ -146,7 +154,7 @@ def group_batchs(len2namenum,
 
     for length in len2namenum.keys():
         organizer = BatchGroup(
-            datasets, datasetnormalize,
+            datasets, datasetnormalize, attributes,
             batchsize, weight_factors,
             rawdatadir, datafile,
             len2namenum[length], length, curr_batch_idx, stdout
