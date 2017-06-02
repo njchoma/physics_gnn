@@ -1,6 +1,7 @@
 from os.path import join
 import pickle
 from utils.files import makefile_if_not_there, print_
+from torch import Tensor
 
 from Atlas_nyu.batchgen.getbatch import GetBatch
 from Atlas_nyu.statistics import Statistics
@@ -49,7 +50,7 @@ class Model:
     def do_one_batch(self, batchgen, mode, criterion=None, optimizer=None, roccurve=None):
         # get data
         data, is_not_last_batch = batchgen.batch()
-        energy = data['energy']
+        energy = data['E']
         phi = data['phi']
         eta = data['eta']
         label = data['label']
@@ -67,15 +68,9 @@ class Model:
             else:
                 loss = criterion(output, label, weight=self.weightfunc(self.param, weight, label))
 
-        # backward + optimizer + update learning rate
-        if optimizer is not None:
-            loss.backward()
-            optimizer.step()
-            optimizer.update(loss.data[0])
-
         # update stats
-        # isotropic kernel : kernel_std = self.net.adjacency.std.abs().data[0]
-        kernel_std = (self.net.adjacency.alpha / self.net.adjacency.beta).abs().data[0]
+        kernel_std = self.net.adjacency.sigma.abs().data[0]
+        # directionnal kernel : kernel_std = (self.net.adjacency.alpha / self.net.adjacency.beta).abs().data[0]
         if criterion is not None:
             self.statistics.update(
                 mode, output.data, label.data, loss.data.mean(), kernel_std
@@ -86,6 +81,12 @@ class Model:
             )
         self.nb_batch_seen += 1
 
+        # backward + optimizer + update learning rate
+        if optimizer is not None:
+            loss.backward()
+            optimizer.step()
+            optimizer.update(loss.data[0])
+
         # update ROC curve
         if roccurve is not None:
             roccurve.update(output, label, weight)
@@ -95,7 +96,7 @@ class Model:
     def train_epoch(self, optimizer, criterion):
         """One epoch of training"""
         # Generator
-        batchgen = GetBatch(self.param, random=True, datatype='train')
+        batchgen = GetBatch(self.param, datatype='train')
 
         # initiate batch counter
         self.nb_batch_seen = 0

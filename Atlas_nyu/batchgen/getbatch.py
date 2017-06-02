@@ -17,9 +17,10 @@ class GetBatch:
         self.is_cuda = param.cuda
 
         # Load data
-        self.data, self.labels = pickle.load(open(param.datadir, 'rb'), encoding='latin1')
+        filename = join(param.datadir, 'antikt-kt-' + self.datatype + '-gcnn.pickle')
+        self.data, self.labels = pickle.load(open(filename, 'rb'), encoding='latin1')
 
-        self.batch_idx = self.labels.size  # index to current batch
+        self.batch_idx = len(self.labels)  # index to current batch
 
     def batch(self):
         """returns batch and a boolean : False if there is no batch left
@@ -37,6 +38,7 @@ class GetBatch:
             for k, feature in enumerate(['p', 'eta', 'phi', 'E', 'pt', 'theta', 'px', 'py', 'pz'])
         }
         data_dict['label'] = Variable(Tensor([label]))
+        data_dict['weight'] = Tensor([1.])  # EDIT : replace with real weight
 
         # CUDA
         if self.is_cuda:
@@ -45,4 +47,4 @@ class GetBatch:
 
 
 
-        return (data, batches_left)
+        return (data_dict, batches_left)

@@ -7,16 +7,17 @@ class Gaussian(Distance):
 
     def __init__(self, *args, **kwargs):
         super(Gaussian, self).__init__(*args, **kwargs)
-        std = Parameter((torch.rand(1) * 0.2 + 0.9) * self.std)
-        self.register_parameter('std', std)  # Uniform on [0.9, 1.1]
+        sigma = Parameter((torch.rand(1) * 0.02 + 0.99) * self.std)
+        print(sigma)
+        self.register_parameter('sigma', sigma)  # Uniform on [0.9, 1.1]
 
     def kernel(self, phi, eta):
         """takes the exponential of squared distances and renormalizes"""
 
         sqdist = self.distances(phi, eta)
-        var = (self.std ** 2).expand_as(sqdist)
+        var = (self.sigma ** 2).expand_as(sqdist)
 
-        adj = (-sqdist / var).exp()
+        adj = (-sqdist * var).exp()
 
         return adj
 

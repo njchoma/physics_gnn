@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from GraphConv.kernel.learnkernel import DirectionnalGaussian as Adjacency  # EDIT : choice of adjacency type should be done in metaparameter file
-from GraphConv.kernel.sparsekernel import DirectionnalGaussianKNN as AdjacencyKNN  # EDIT : choice of adjacency type should be done in metaparameter file
+from GraphConv.kernel.learnkernel import Gaussian as Adjacency  # EDIT : choice of adjacency type should be done in metaparameter file
+from GraphConv.kernel.sparsekernel import GaussianKNN as AdjacencyKNN  # EDIT : choice of adjacency type should be done in metaparameter file
 from GraphConv.graphlayer.residualgraphconv import ResidualGraphConv as resgconv
 from GraphConv.functional.batchnorm import batchnorm
 
@@ -40,7 +40,7 @@ class RGCs_FCL(nn.Module):
         self.logistic_regression = logistic_regression
 
     def forward(self, e, phi, eta):
-        e = batchnorm(e, axis=1)
+        # e = batchnorm(e, axis=1)
 
         # adjacency for GNN
         adj = self.adjacency(phi, eta)
@@ -50,8 +50,8 @@ class RGCs_FCL(nn.Module):
         # plot_kernel(phi[0, :].data.numpy(), eta[0, :].data.numpy(), adj[0][0, :].data.numpy(), img_id)
 
         # input is a concatenation of e and eta
-        eta = batchnorm(eta, axis=1)
-        phi = batchnorm(phi, axis=1)
+        # eta = batchnorm(eta, axis=1)
+        # phi = batchnorm(phi, axis=1)
         features = [e, eta, phi]
         if self.normalize:  # the renormalization factors were returned with adj
             adj, factors = adj
