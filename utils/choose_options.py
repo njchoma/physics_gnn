@@ -1,6 +1,6 @@
 from torch.nn.functional import binary_cross_entropy
 from utils.loss_modif import MarginRankingLoss
-from Atlas.optim.optimizer import SGDOptimizer, AdamOptimizer
+from optim.optimizer import SGDOptimizer, AdamOptimizer
 
 
 def loss(loss):
