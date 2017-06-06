@@ -82,12 +82,14 @@ class Statistics:
                 self.buffer[mode]['avg1'] /= self.buffer[mode]['nb_ones']
                 var1 = self.buffer[mode]['std1'] / self.buffer[mode]['nb_ones']
                 var1 -= self.buffer[mode]['avg1'] ** 2
+                var1 = max(0, var1)  # prevents negative variance from approximation
                 self.buffer[mode]['std1'] = sqrt(var1)
 
             if self.buffer[mode]['nb_zero'] > 0:
                 self.buffer[mode]['avg0'] /= self.buffer[mode]['nb_zero']
                 var0 = self.buffer[mode]['std0'] / self.buffer[mode]['nb_zero']
                 var0 -= self.buffer[mode]['avg0'] ** 2
+                var0 = max(0, var0)  # prevents negative variance from approximation
                 self.buffer[mode]['std0'] = sqrt(var0)
 
             if mode == 'train':
@@ -119,8 +121,6 @@ class Statistics:
 
     def _init_buffer(self, mode):
         self.nb_batch_in_buffer[mode] = 0
-        self.nb_ones = 0
-        self.nb_zero = 0
         for stat in self.stats:
             self.buffer[mode][stat] = 0
         self.buffer[mode]['nb_ones'] = 0
