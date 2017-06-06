@@ -8,7 +8,6 @@ class Gaussian(Distance):
     def __init__(self, *args, **kwargs):
         super(Gaussian, self).__init__(*args, **kwargs)
         sigma = Parameter((torch.rand(1) * 0.02 + 0.99) * self.std)
-        print(sigma)
         self.register_parameter('sigma', sigma)  # Uniform on [0.9, 1.1]
 
     def kernel(self, phi, eta):

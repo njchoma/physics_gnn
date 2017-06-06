@@ -33,8 +33,9 @@ class ResidualGraphConv(nn.Module):
 
     def forward(self, adj, x):
         ylin = self.gconv1(adj, x)
-        ynlin = self.nonlin(self.gconv2(adj, x))
+        ynlin = self.gconv2(adj, x)
+        ynlin = self.nonlin(ynlin)
         y = torch.cat((ylin, ynlin), 1)
         if self.bn:
-            y = batchnorm(y)
+            y = batchnorm(y, axis=1)
         return y

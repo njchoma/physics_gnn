@@ -116,7 +116,7 @@ class Model:
         """Tests model on `mode` dataset, plots ROC curve"""
 
         # Generator
-        batchgen = GetBatch(self.param, random=True, datatype=mode)
+        batchgen = GetBatch(self.param, datatype=mode)
 
         # initiate batch counter
         self.nb_batch_seen = 0
@@ -143,11 +143,11 @@ class Model:
             self.train_epoch(optimizer, criterion)
 
         # plot ROC Curves
-        nb_plot = self.param.nb_batch
-        nb_plot_test = self.plot_epoch('test', nb_plot)
-        self.statistics.flush()
-        self.plot_epoch('train', nb_plot_test)
-        self.statistics.flush()
+        # nb_plot = self.param.nb_batch
+        # nb_plot_test = self.plot_epoch('test', nb_plot)
+        # self.statistics.flush()
+        # self.plot_epoch('train', nb_plot_test)
+        # self.statistics.flush()
 
     def save_model(self):
         makefile_if_not_there(self.param.netdir, 'model')
