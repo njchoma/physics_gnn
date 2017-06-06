@@ -30,7 +30,8 @@ def plot_statistics(param, stats=None, figsize=(20, 50)):
         ax.plot(data, label=stat)
         ax.legend(loc="upper right")
         ax.grid(linestyle=':')
-        ax.set_yscale('log')
+        if 'loss' in stat:
+            ax.set_yscale('log')
 
     loc = join(param.statdir, 'stats.png')
     fig.savefig(loc)
