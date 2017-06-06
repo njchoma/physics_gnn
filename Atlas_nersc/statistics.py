@@ -48,18 +48,14 @@ class Statistics:
                 self.steps = 0
 
         nb_ones = labels.sum()
-        output_avg_ones = (output * labels).sum()
-        if nb_ones > 0:
-            output_std_ones = (((output - output_avg_ones / nb_ones) * labels) ** 2).sum()
-        else:
-            output_std_ones = 0
+        output_ones = output * labels
+        output_avg_ones = output_ones.sum()
+        output_sqr_ones = (output_ones ** 2).sum()
 
         nb_zero = (1 - labels).sum()
-        output_avg_zero = (output * (1 - labels)).sum()
-        if nb_zero > 0:
-            output_std_zero = (((output - output_avg_zero / nb_zero) * (1 - labels)) ** 2).sum()
-        else:
-            output_std_zero = 0
+        output_zero = output * (1 - labels)
+        output_avg_zero = output_zero.sum()
+        output_sqr_zero = (output_zero ** 2).sum()
 
         # update buffers for average stats
         self.buffer[mode]['loss'] += loss_step
@@ -67,11 +63,11 @@ class Statistics:
 
         self.buffer[mode]['nb_ones'] += nb_ones
         self.buffer[mode]['avg1'] += output_avg_ones
-        self.buffer[mode]['std1'] += output_std_ones
+        self.buffer[mode]['std1'] += output_sqr_ones
 
         self.buffer[mode]['nb_zero'] += nb_zero
         self.buffer[mode]['avg0'] += output_avg_zero
-        self.buffer[mode]['std0'] += output_std_zero
+        self.buffer[mode]['std0'] += output_sqr_zero
 
         self._update_buffer(mode)
 
@@ -84,11 +80,15 @@ class Statistics:
 
             if self.buffer[mode]['nb_ones'] > 0:
                 self.buffer[mode]['avg1'] /= self.buffer[mode]['nb_ones']
-                self.buffer[mode]['std1'] = sqrt(self.buffer[mode]['std1'] / self.buffer[mode]['nb_ones'])
+                var1 = self.buffer[mode]['std1'] / self.buffer[mode]['nb_ones']
+                var1 -= self.buffer[mode]['avg1'] ** 2
+                self.buffer[mode]['std1'] = sqrt(var1)
 
             if self.buffer[mode]['nb_zero'] > 0:
                 self.buffer[mode]['avg0'] /= self.buffer[mode]['nb_zero']
-                self.buffer[mode]['std0'] = sqrt(self.buffer[mode]['std0'] / self.buffer[mode]['nb_zero'])
+                var0 = self.buffer[mode]['std0'] / self.buffer[mode]['nb_zero']
+                var0 -= self.buffer[mode]['avg0'] ** 2
+                self.buffer[mode]['std0'] = sqrt(var0)
 
             if mode == 'train':
                 for stat in self.stats:
@@ -97,16 +97,16 @@ class Statistics:
                 # print average stats
                 print_(
                     '{: >10} events : '.format(self.nb_events_seen[mode]) +
-                    ' - '.join('{}: {:.2E}'.format(
-                        stat, self.buffer[mode][stat])
+                    ' - '.join(
+                        '{}: {:.2E}'.format(stat, self.buffer[mode][stat])
                         for stat in self.stats),
                     stdout=self.stdout)
 
             else:
                 print_(
                     '{: >10} events : '.format(self.nb_events_seen[mode]) +
-                    ' - '.join('{}: {:.2E}'.format(
-                        stat, self.buffer[mode][stat])
+                    ' - '.join(
+                        '{}: {:.2E}'.format(stat, self.buffer[mode][stat])
                         for stat in self.stats if 'loss' not in stat))
 
             # Restart buffers
