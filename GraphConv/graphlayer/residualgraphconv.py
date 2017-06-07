@@ -37,5 +37,5 @@ class ResidualGraphConv(nn.Module):
         ynlin = self.nonlin(ynlin)
         y = torch.cat((ylin, ynlin), 1)
         if self.bn:
-            y = batchnorm(y, axis=1)
+            y = batchnorm(y, axis=2)
         return y

@@ -55,7 +55,7 @@ class RGCs_FCL(nn.Module):
         features = [e, eta, phi]
         if self.normalize:  # the renormalization factors were returned with adj
             adj, factors = adj
-            factors = batchnorm(eta, axis=1)
+            factors = batchnorm(adj, axis=1)
             features.append(factors)
         e = torch.stack(features, dim=1)
 

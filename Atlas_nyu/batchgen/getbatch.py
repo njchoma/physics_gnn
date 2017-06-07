@@ -40,6 +40,8 @@ class GetBatch:
         data_dict['label'] = Variable(Tensor([label]))
         data_dict['weight'] = Tensor([1.])  # EDIT : replace with real weight
 
+        data_dict['E'] = data_dict['E'] / 100
+
         # CUDA
         if self.is_cuda:
             for feature in data_dict.keys():

@@ -74,8 +74,8 @@ class Model:
             optimizer.update(loss.data[0])
 
         # update stats
-        # isotropic kernel : kernel_std = self.net.adjacency.std.abs().data[0]
-        kernel_std = (self.net.adjacency.alpha / self.net.adjacency.beta).abs().data[0]
+        kernel_std = self.net.adjacency.sigma.abs().data[0]
+        # directional kernel : kernel_std = (self.net.adjacency.alpha / self.net.adjacency.beta).abs().data[0]
         if criterion is not None:
             self.statistics.update(
                 mode, output.data, label.data, loss.data.mean(), kernel_std

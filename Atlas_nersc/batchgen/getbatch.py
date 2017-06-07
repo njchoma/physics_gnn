@@ -14,6 +14,7 @@ class GetBatch:
     Variable"""
 
     def __init__(self, param, random=None, datatype=None, thr=10):
+        print('WARNING : ENERGY MANUALY AMPLIFIED BY 10**8')
         self.param = param
         self.is_test = param.datatype == 'test'
         self.random = not self.is_test if random is None else random
@@ -65,7 +66,7 @@ class GetBatch:
         # Read data
         with h5.File(join(self.param.datadir, self.currfile), 'r') as currfile:
             batch = currfile[self.batchname]
-            energy = batch['energy'][()]  # read energy
+            energy = batch['energy'][()] * 10 ** 8  # read energy
             phi = batch['phi'][()]  # read phi
             eta = batch['eta'][()]  # read eta
             label = batch['label'][()]  # read label

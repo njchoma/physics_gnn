@@ -10,11 +10,11 @@ defaultconfig = {
     'epoch': 50,
 
     # optimizer options
-    'optimizer': 'Adam',
+    'optimizer': 'SGD',
     'loss': 'BCE',
     'lr': 0.01,
-    'lr_thr': 0.98,
-    'lr_update': 0.98,
+    'lr_thr': 1.0,
+    'lr_update': 0.95,
     'lr_nbbatch': 50000,
 
     # printing parameters
@@ -26,10 +26,10 @@ defaultconfig = {
     'possible_stats': ['loss', 'kernel', 'avg1', 'std1', 'avg0', 'std0'],
 
     # initialisation parameters
-    'modeltype': 'GNNModifSpatial',
-    'dim': [5] * 1,
-    'deg': [1] * 2,
-    'modifdeg': [1] * 2,
+    'modeltype': 'RGCs_FCL',
+    'dim': [10, 10],
+    'deg': [1, 1],
+    'modifdeg': [],
 
 }
 
