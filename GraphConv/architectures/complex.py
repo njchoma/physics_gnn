@@ -35,7 +35,14 @@ class RGCs_FCL(nn.Module):
         self.bn = usebatchnorm
         self.dim = dim
         self.deg = deg
-        self.resgconv = nn.ModuleList([resgconv(dim[i], dim[i + 1], deg[i], F.relu, bn=self.bn) for i in range(self.nblayer - 1)])
+        self.resgconv = nn.ModuleList(
+            [resgconv(dim[i], dim[i + 1], deg[i], F.relu, bn=self.bn)
+             for i in range(self.nblayer - 2)]
+        )
+        self.last_resgconv = resgconv(
+            dim[self.nblayer - 2], dim[self.nblayer - 1], deg[self.nblayer - 2],
+            F.relu, bn=False
+        )
         self.fc = nn.Linear(dim[-1], 1)
         self.logistic_regression = logistic_regression
 
@@ -59,8 +66,9 @@ class RGCs_FCL(nn.Module):
             features.append(factors)
         e = torch.stack(features, dim=1)
 
-        for i in range(self.nblayer - 1):
-            e = self.resgconv[i](adj, e)
+        for gconvlayer in self.resgconv:
+            e = gconvlayer(adj, e)
+        e = self.last_resgconv(adj, e)
         e = e.mean(2).squeeze(2)
         e = self.fc(e).squeeze(1)
 
