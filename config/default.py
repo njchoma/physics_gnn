@@ -12,7 +12,7 @@ defaultconfig = {
     # optimizer options
     'optimizer': 'SGD',
     'loss': 'BCE',
-    'lr': 0.01,
+    'lr': 0.0001,
     'lr_thr': 1.0,
     'lr_update': 0.95,
     'lr_nbbatch': 50000,
