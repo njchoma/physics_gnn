@@ -36,6 +36,7 @@ class Model:
 
     def newparameters(self, param, stdout=None):
         self.param = param
+        self.lr = param.lr
         nbnetparameters = sum(param.numel() for param in self.net.parameters())
         self.statistics.newparameters(param, nbnetparameters, stdout)
 
