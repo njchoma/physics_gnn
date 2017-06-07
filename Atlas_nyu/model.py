@@ -142,13 +142,13 @@ class Model:
         # train if needed
         if self.param.mode == 'train':
             self.train_epoch(optimizer, criterion)
-
-        # plot ROC Curves
-        nb_plot = self.param.nb_batch
-        nb_plot_test = self.plot_epoch('test', nb_plot)
-        self.statistics.flush()
-        self.plot_epoch('train', nb_plot_test)
-        self.statistics.flush()
+        else:
+            # plot ROC Curves
+            nb_plot = self.param.nb_batch
+            nb_plot_test = self.plot_epoch('test', nb_plot)
+            self.statistics.flush()
+            self.plot_epoch('train', nb_plot_test)
+            self.statistics.flush()
 
     def save_model(self):
         makefile_if_not_there(self.param.netdir, 'model')
