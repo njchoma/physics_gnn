@@ -65,11 +65,12 @@ class GraphOpConv(nn.Module):
     """Performs graph convolution.
     parameters : - in_fm : number of feature maps in input
                  - out_fm : number of feature maps in output
-                 - nb_op : number of graph operators
+                 - nb_op : number of graph operators besides identity.abs
+                        e.g. x -> a.x * b.Wx has one operator : W
 
     inputs : - ops : concatenated graph operators, those are being applied
                     to x by right side dot product : x.op
-                    shape (batch, nb_node, J * nb_node)
+                    shape (batch, nb_node, nb_node * nb_op)
              - emb_in : signal embedding. shape (batch, in_fm, nb_node)
 
     output : - emb_out : new embedding. shape (batch, out_fm, nb_node)
@@ -79,7 +80,7 @@ class GraphOpConv(nn.Module):
         super(GraphOpConv, self).__init__()
         invsqrt2 = sqrt(2) / 2
 
-        weight = torch.Tensor(1, out_fm, in_fm * nb_op)
+        weight = torch.Tensor(1, out_fm, in_fm * (nb_op + 1))
         nn.init.uniform(weight, -invsqrt2, invsqrt2)
         self.register_parameter('weight', Parameter(weight))
 
@@ -88,12 +89,18 @@ class GraphOpConv(nn.Module):
         self.register_parameter('bias', Parameter(bias))
 
     def forward(self, ops, emb_in):
+        """Defines the computation performed at every call.
+        Computes graph convolution with graph operators `ops`,
+        on embedding `emb_in`
+        """
+
         batch_size = emb_in.size()[0]
         nb_node = emb_in.size()[2]
         spread = torch.bmm(emb_in, ops)
 
-        # split effects from different operators, concatenate on feature maps
+        # split spreading from different operators, concatenate on feature maps
         spread = spread.split(nb_node, 2)
+        spread = (emb_in,) + spread  # identity operator is always used, this avoids matrix dot
         spread = torch.cat(spread, 1)
 
         # apply weights and bias
@@ -113,12 +120,12 @@ class GraphOpConv(nn.Module):
         return (weight, bias)
 
 if __name__ == '__main__':
-    v = 0.2
-    gconv = GraphOpConv(3, 10, 2)
-    adj = Variable(torch.rand(10, 4, 4)).view(10, 4, 4)
-    adj = adj + adj.transpose(1, 2).contiguous()
-    eye = Variable(torch.eye(4)).unsqueeze(0)
-    ops = torch.cat((eye.expand_as(adj), adj), 2)
+    V = 0.2
+    GCONV = GraphOpConv(3, 10, 2)
+    ADJ = Variable(torch.rand(10, 4, 4)).view(10, 4, 4)
+    ADJ = ADJ + ADJ.transpose(1, 2).contiguous()
+    EYE = Variable(torch.eye(4)).unsqueeze(0)
+    OPS = torch.cat((EYE.expand_as(ADJ), ADJ), 2)
 
-    x = Variable(torch.rand(10, 3, 4))
-    gconv(ops, x)
+    X = Variable(torch.rand(10, 3, 4))
+    GCONV(OPS, X)
