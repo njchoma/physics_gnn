@@ -6,13 +6,15 @@ from torch.autograd import Variable
 from roccurve import ROCCurve
 
 
-def load_data(filepath):
+def load_data(filepath, nb_ex):
     """Loads data at `filepath` and returns (`data`, `label`).
         - `data` : list of events represented by (nb_node, 9) numpy arrays
         - `label` : corresponding labels
     """
 
     data, label = pickle.load(open(filepath, 'rb'), encoding='latin1')
+    if nb_ex is not None:
+        data, label = data[:nb_ex], label[:nb_ex]
     return data, label
 
 
@@ -41,15 +43,14 @@ def get_fixed_param():
         paramfile.write(
             "\ntrainfile =  # path to training data `antikt-kt-train-gcnn.pickle`\n"
             + "testfile =  # path to testing data `antikt-kt-test-gcnn.pickle`\n"
-            + "kernel =  # name of the kernel used (check main for options)\n"
         )
     raise FileNotFoundError("'param.txt' created, missing parameters")
 
 
-def train_net(net, data_args, criterion, optimizer, args):
+def train_net(net, trainfile, criterion, optimizer, args):
     """Trains net for one epoch using criterion loss and optimizer"""
 
-    data, label = data_args
+    data, label = load_data(trainfile, args.nbtrain)
     epoch_loss = 0
     step_loss = 0
 
@@ -78,11 +79,10 @@ def train_net(net, data_args, criterion, optimizer, args):
     return epoch_loss_avg
 
 
-def test_net(net, testfile, nb_test, cuda):
+def test_net(net, testfile, criterion, args):
     """Tests the network, returns the ROC AUC and epoch loss"""
 
-    data, label = load_data(testfile)
-    data, label = data[:nb_test], label[:nb_test]
+    data, label = load_data(testfile, args.nbtest)
     criterion = nn.BCELoss()
     epoch_loss = 0
     roccurve = ROCCurve()
@@ -90,7 +90,7 @@ def test_net(net, testfile, nb_test, cuda):
     for i, ground_truth in enumerate(label):
         ground_truth = Variable(torch.Tensor([ground_truth]))
         jet = Variable(torch.Tensor(data[i])).t().unsqueeze(0)
-        if cuda:
+        if args.cuda:
             ground_truth = ground_truth.cuda()
             jet = jet.cuda()
 
