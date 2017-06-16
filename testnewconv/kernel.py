@@ -32,6 +32,13 @@ def _delete_diag(adj):
     return adj
 
 
+def _stochastich(adj):
+    deg = adj.sum(2)
+    adj /= deg.expand_as(adj)
+
+    return adj
+
+
 def _mmin(tensor):
     batch = tensor.size()[0]
     nb_node = tensor.size()[1]
@@ -47,10 +54,11 @@ def _mmin(tensor):
 
 class FixedGaussian(nn.Module):
     """Gaussian kernel with fixed sigma"""
-    def __init__(self, sigma, diag=True):
+    def __init__(self, sigma, diag=True, norm=False):
         super(FixedGaussian, self).__init__()
         self.sigma = sigma
         self.diag = diag
+        self.norm = norm
 
     def forward(self, emb):
         """takes the exponential of squared distances"""
@@ -58,6 +66,8 @@ class FixedGaussian(nn.Module):
         adj = _gaussian(_sqdist(emb), self.sigma)
         if not self.diag:
             adj = _delete_diag(adj)
+        if self.norm:
+            adj = _stochastich(adj)
 
         return adj
 
@@ -67,10 +77,11 @@ class FixedComplexGaussian(nn.Module):
     introducing the orientation of `emb_i - emb_j` in `adj_ij`
     """
 
-    def __init__(self, sigma, diag=True):
+    def __init__(self, sigma, diag=True, norm=False):
         super(FixedComplexGaussian, self).__init__()
         self.sigma = sigma
         self.diag = diag
+        self.norm = norm
 
     def forward(self, emb):
         """takes the exponential of squared distances,
@@ -81,6 +92,8 @@ class FixedComplexGaussian(nn.Module):
         adj = _gaussian(_sqdist(emb), self.sigma)
         if not self.diag:
             adj = _delete_diag(adj)
+        if self.norm:
+            adj = _stochastich(adj)
 
         # orientation
         coord = coord = emb[:, 1:3, :]
@@ -103,11 +116,12 @@ class FixedComplexGaussian(nn.Module):
 
 class Gaussian(nn.Module):
     """Gaussian kernel"""
-    def __init__(self, diag=True):
+    def __init__(self, diag=True, norm=False):
         super(Gaussian, self).__init__()
         sigma = Parameter(torch.rand(1) * 0.02 + 0.99)
         self.register_parameter('sigma', sigma)  # Uniform on [0.9, 1.1]
         self.diag = diag
+        self.norm = norm
 
     def forward(self, emb):
         """takes the exponential of squared distances"""
@@ -115,6 +129,8 @@ class Gaussian(nn.Module):
         adj = _gaussian(_sqdist(emb), self.sigma)
         if not self.diag:
             adj = _delete_diag(adj)
+        if self.norm:
+            adj = _stochastich(adj)
 
         return adj
 
@@ -124,11 +140,12 @@ class ComplexGaussian(nn.Module):
     introducing the orientation of `emb_i - emb_j` in `adj_ij`
     """
 
-    def __init__(self, diag=True):
+    def __init__(self, diag=True, norm=False):
         super(ComplexGaussian, self).__init__()
         sigma = Parameter(torch.rand(1) * 0.02 + 0.99)
         self.register_parameter('sigma', sigma)  # Uniform on [0.9, 1.1]
         self.diag = diag
+        self.norm = norm
 
     def forward(self, emb):
         """takes the exponential of squared distances,
@@ -139,6 +156,8 @@ class ComplexGaussian(nn.Module):
         adj = _gaussian(_sqdist(emb), self.sigma)
         if not self.diag:
             adj = _delete_diag(adj)
+        if self.norm:
+            adj = _stochastich(adj)
 
         # orientation
         coord = coord = emb[:, 1:3, :]
@@ -176,7 +195,7 @@ class QCDDist(nn.Module):
         return d_ij
 
 
-class QCDAware(nn.Module):
+class FixedQCDAware(nn.Module):
     """kernel base on 'QCD-Aware Recursive Neural Networks for Jet Physics"""
 
     def __init__(self, alpha, beta, radius, epsilon=1e-7):

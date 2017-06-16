@@ -6,16 +6,27 @@ from torch.autograd import Variable
 from roccurve import ROCCurve
 
 
-def load_data(filepath, nb_ex):
+def load_data(filepath, nb_ex, datatype):
     """Loads data at `filepath` and returns (`data`, `label`).
-        - `data` : list of events represented by (nb_node, 9) numpy arrays
+        - `data` : list of events represented by (nb_node, nb_features) numpy arrays
         - `label` : corresponding labels
     """
 
+    if datatype == 'NYU':
+        return _load_data_nyu(filepath, nb_ex)
+    elif datatype == 'NERSC':
+        return _load_data_nersc(filepath, nb_ex)
+
+
+def _load_data_nyu(filepath, nb_ex):
     data, label = pickle.load(open(filepath, 'rb'), encoding='latin1')
     if nb_ex is not None:
         data, label = data[:nb_ex], label[:nb_ex]
     return data, label
+
+
+def _load_data_nersc(filepath, nb_ex):
+    raise NotImplementedError
 
 
 def get_fixed_param():
@@ -34,7 +45,7 @@ def get_fixed_param():
                 if arg_val == '':
                     raise ValueError(
                         "Empty parameter in 'param.txt': {}".format(arg_name))
-                print("new_net_param {} : '{}'".format(arg_name, arg_val))
+                print("param {} : '{}'".format(arg_name, arg_val))
         return args
 
     if exists('param.txt'):
@@ -50,7 +61,7 @@ def get_fixed_param():
 def train_net(net, trainfile, criterion, optimizer, args):
     """Trains net for one epoch using criterion loss and optimizer"""
 
-    data, label = load_data(trainfile, args.nbtrain)
+    data, label = load_data(trainfile, args.nbtrain, args.data)
     epoch_loss = 0
     step_loss = 0
 
@@ -82,7 +93,7 @@ def train_net(net, trainfile, criterion, optimizer, args):
 def test_net(net, testfile, criterion, args):
     """Tests the network, returns the ROC AUC and epoch loss"""
 
-    data, label = load_data(testfile, args.nbtest)
+    data, label = load_data(testfile, args.nbtest, args.data)
     criterion = nn.BCELoss()
     epoch_loss = 0
     roccurve = ROCCurve()

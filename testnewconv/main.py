@@ -13,7 +13,8 @@ def _read_args():
     add_arg = parser.add_argument
 
     add_arg('--name', dest='name', help='network reference')
-    add_arg('--kernel', dest='kernel', help='name of kernel used', default='FixedComplexGaussian')
+    add_arg('--kernel', dest='kernel', help='name of kernel used', default='FCG')
+    add_arg('--data', dest='data', help='project to take data from', default='NYU')
     add_arg('--fm', dest='nb_feature_maps', help='number of feature maps per layer', type=int)
     add_arg('--depth', dest='nb_layer', help='number of layers', type=int)
     add_arg('--sigma', dest='sigma', help='kernel stdev initial value', type=float)
@@ -30,17 +31,23 @@ def _read_args():
 def main():
     """Loads data, recover network then train, test and save network"""
 
+    print("\nUpdate the spatialnorm to torch.nn.InstanceNorm1d, don't forget to train and eval !")
+
     args = _read_args()
     param = model.get_fixed_param()
     trainfile = param['trainfile']
     testfile = param['testfile']
 
-    if args.kernel == 'FixedComplexGaussian':
-        kernel = Kernel.FixedComplexGaussian(args.sigma, diag=True)
-    elif args.kernel == 'FixedComplexGaussianNoDiag':
+    if args.kernel == 'FCG':
+        kernel = Kernel.FixedComplexGaussian(args.sigma)
+    elif args.kernel == 'FCG_nodiag':
         kernel = Kernel.FixedComplexGaussian(args.sigma, diag=False)
-    elif args.kernel == 'QCDAware':
-        kernel = Kernel.QCDAware(1., 0.001, 1.)
+    elif args.kernel == 'FCG_norm':
+        kernel = Kernel.FixedComplexGaussian(args.sigma, norm=True)
+    elif args.kernel == 'FCG_nodiag_norm':
+        kernel = Kernel.FixedComplexGaussian(args.sigma, diag=False, norm=True)
+    elif args.kernel == 'FQCDAware':
+        kernel = Kernel.FixedQCDAware(1., 0.001, 1.)
     else:
         raise ValueError('Unknown kernel : {}'.format(kernel))
 

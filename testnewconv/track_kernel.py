@@ -41,6 +41,8 @@ def create_tracker(datafile, donormalize, diag, start, stop, nb_pts):
 
     for sigma in sigma_range:
         adj = kernel(sigma, diag=diag)(emb_in)[0, :, :]
+        print(adj.size())
+        assert False
         if donormalize:
             adj = adj / adj.sum(1).expand_as(adj)
         adj = adj.data.numpy()
