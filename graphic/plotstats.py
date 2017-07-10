@@ -16,7 +16,7 @@ def statpath(statdir, stat):
 
 
 def plot_statistics(param, stats=None, figsize=(20, 50)):
-    possible_stats = ['loss_step'] + param.possible_stats
+    possible_stats = param.possible_stats
     print(possible_stats)
 
     if stats is None:

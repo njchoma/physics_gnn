@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 from torch.autograd import Variable
+from torch.nn.functional import relu
 from utils import _variable_as, _cuda_as
-
+from math import sqrt
 
 def _sqdist(emb):
     coord = emb[:, 1:3, :]
@@ -50,6 +51,10 @@ def _mmin(tensor):
     res, _ = res.min(1)
     res = res.squeeze(1)
     return res
+
+
+def _hook_reduce_grad(divider):
+    return lambda grad: grad / divider
 
 
 class FixedGaussian(nn.Module):
@@ -179,7 +184,7 @@ class ComplexGaussian(nn.Module):
 
 
 class QCDDist(nn.Module):
-    """kernel base on 'QCD-Aware Recursive Neural Networks for Jet Physics"""
+    """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, alpha, radius):
         super(QCDDist, self).__init__()
@@ -196,10 +201,10 @@ class QCDDist(nn.Module):
 
 
 class FixedQCDAware(nn.Module):
-    """kernel base on 'QCD-Aware Recursive Neural Networks for Jet Physics"""
+    """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, alpha, beta, radius, epsilon=1e-7):
-        super(QCDAware, self).__init__()
+        super(FixedQCDAware, self).__init__()
         self.alpha = alpha
         self.beta = beta
         self.radius = radius
@@ -216,6 +221,45 @@ class FixedQCDAware(nn.Module):
         d_ij_center = (d_ij_alpha - d_min) / d_min
         d_ij_center /= 10000
         d_ij_norm = self.beta * d_ij_center
+        w_ij = (-d_ij_norm).exp()
+
+        return w_ij
+
+
+class QCDAware(nn.Module):
+    """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
+
+    def __init__(self, alpha, beta, radius, epsilon=1e-7):
+        super(QCDAware, self).__init__()
+        self.epsilon = epsilon  # protection against division by 0
+
+        alpha = Parameter(alpha * (torch.rand(1, 1) * 0.02 + 0.99))
+        beta = Parameter(beta * (torch.rand(1, 1, 1) * 0.02 + 0.99))
+        radius = Parameter(radius * (torch.rand(1, 1, 1) * 0.02 + 0.99))
+        self.register_parameter('alpha', alpha)
+        self.register_parameter('beta', beta)
+        self.register_parameter('radius', radius)
+
+    def forward(self, emb):
+        sqdist = _sqdist(emb)
+        sqradius = (self.radius ** 2).expand_as(sqdist) + self.epsilon
+        # radius.register_hook(_hook_reduce_grad(100))
+        sqdist = sqdist / sqradius
+        momentum = emb[:, 4, :]
+        alpha = self.alpha.expand_as(momentum)
+        # alpha.register_hook(_hook_reduce_grad(100))
+        pow_momenta = (2 * alpha * momentum.log()).exp()
+        min_momenta = _mmin(pow_momenta)
+        d_ij_alpha = sqdist * min_momenta
+
+        d_min, _ = pow_momenta.min(1)
+        d_min = d_min.unsqueeze(2)
+        d_min = (d_min + self.epsilon).expand_as(d_ij_alpha)
+        d_ij_center = (d_ij_alpha - d_min) / d_min
+        d_ij_center /= 10000
+        beta = (self.beta ** 2).expand_as(d_ij_center)
+        # beta.register_hook(_hook_reduce_grad(100))
+        d_ij_norm = beta * d_ij_center
         w_ij = (-d_ij_norm).exp()
 
         return w_ij

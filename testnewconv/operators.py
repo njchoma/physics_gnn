@@ -28,7 +28,7 @@ def count_operators(operator_iter, kernel):
     """
 
     def _operator_size(operator):
-        fake_input = Variable(torch.ones(1, 3, 1))
+        fake_input = Variable(torch.ones(1, 8, 1))
         fake_output = operator(kernel(fake_input))
         return fake_output.numel()
 
@@ -72,7 +72,6 @@ def average(adj):
 
 def degree(adj):
     """Degree matrix"""
-
     def _degree_one(adj):
         """when there is only one adjacency"""
 

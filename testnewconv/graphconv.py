@@ -72,9 +72,10 @@ class GraphOpConv(nn.Module):
 class ResGOpConv(nn.Module):
     def __init__(self, in_fm, out_fm, nb_op):
         super(ResGOpConv, self).__init__()
-        
+
         if out_fm % 2 != 0:
-            raise ValueError('ResGOpConv requires event number of output feature maps : {}'.format(out_fm))
+            raise ValueError(
+                'ResGOpConv requires event number of output feature maps : {}'.format(out_fm))
 
         half_out_fm = int(out_fm / 2)
         self.gconv_lin = GraphOpConv(in_fm, half_out_fm, nb_op)
@@ -83,10 +84,25 @@ class ResGOpConv(nn.Module):
     def forward(self, ops, emb_in):
         linear = self.gconv_lin(ops, emb_in)
 
+        if (linear != linear).data.sum() > 0:
+            print(ops.data.mean())
+            print(emb_in.data.mean())
+            print('NAN in first gconv : before concat, linear')
+            assert False
+
         nlinear = self.gconv_nlin(ops, emb_in)
         nlinear = relu(nlinear)
 
+        if (nlinear != nlinear).data.sum() > 0:
+            print('NAN in first gconv : before concat, nlinear')
+            assert False
+
         emb_out = torch.cat((linear, nlinear), 1)
+
+        if (emb_out != emb_out).data.sum() > 0:
+            print('NAN in first gconv : before return')
+            assert False
+
         return emb_out
 
 

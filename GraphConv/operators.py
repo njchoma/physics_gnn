@@ -14,7 +14,7 @@ def join_operators(adj, operator_iter):
     """
 
     ops = tuple(operator(adj) for operator in operator_iter)
-    ops = torch.stack(ops, 2)
+    ops = torch.cat(ops, 2)
 
     return ops
 
