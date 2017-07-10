@@ -6,12 +6,14 @@ from torch.nn.functional import relu
 from utils import _variable_as, _cuda_as
 from math import sqrt
 
+
 def _sqdist(emb):
     coord = emb[:, 1:3, :]
-    sqnorm = (coord * coord).sum(1)
-    dotprod = coord.transpose(1, 2).bmm(coord)
-    sqnorm = sqnorm.expand_as(dotprod)
-    sqdist = sqnorm + sqnorm.transpose(1, 2) - 2 * dotprod
+    batch, _, nb_node = coord.size()
+    coord = coord.unsqueeze(3).expand(batch, 2, nb_node, nb_node)
+    coord_t = coord.transpose(2, 3)
+    diff = coord - coord_t
+    sqdist = (diff ** 2).sum(1).squeeze(1) 
 
     return sqdist
 
@@ -51,6 +53,22 @@ def _mmin(tensor):
     res, _ = res.min(1)
     res = res.squeeze(1)
     return res
+
+
+def _min_nodiag(bmatrix):
+    nb_node = bmatrix.size()[2]
+    if bmatrix.is_cuda:
+        eye = torch.cuda.FloatTensor(nb_node, nb_node)
+    else:
+        eye = torch.FloatTensor(nb_node, nb_node)
+    eye = Variable(eye)
+    nn.init.eye(eye)
+    eye = eye.unsqueeze(0).expand_as(bmatrix)
+    val = bmatrix.data.max()
+    bmat_nodiag = bmatrix + val * eye
+    bmat_min, _ = bmat_nodiag.min(1)
+
+    return bmat_min
 
 
 def _hook_reduce_grad(divider):
@@ -240,6 +258,8 @@ class QCDAware(nn.Module):
         self.register_parameter('beta', beta)
         self.register_parameter('radius', radius)
 
+        self.softmax = nn.Softmax()
+
     def forward(self, emb):
         sqdist = _sqdist(emb)
         sqradius = (self.radius ** 2).expand_as(sqdist) + self.epsilon
@@ -252,14 +272,26 @@ class QCDAware(nn.Module):
         min_momenta = _mmin(pow_momenta)
         d_ij_alpha = sqdist * min_momenta
 
-        d_min, _ = pow_momenta.min(1)
-        d_min = d_min.unsqueeze(2)
+        d_min = _min_nodiag(d_ij_alpha)
         d_min = (d_min + self.epsilon).expand_as(d_ij_alpha)
         d_ij_center = (d_ij_alpha - d_min) / d_min
-        d_ij_center /= 10000
+        # d_ij_center /= 10000
         beta = (self.beta ** 2).expand_as(d_ij_center)
         # beta.register_hook(_hook_reduce_grad(100))
-        d_ij_norm = beta * d_ij_center
-        w_ij = (-d_ij_norm).exp()
+        d_ij_norm = - beta * d_ij_center
+        w_ij = self._softmax(d_ij_norm)
 
         return w_ij
+
+    def _softmax(self, dij):
+        batch = dij.size()[0]        
+        
+        dij = torch.unbind(dij, dim=0)
+        dij = torch.cat(dij, dim=0)
+        
+        dij = self.softmax(dij)
+        
+        dij = torch.chunk(dij, batch, dim=0)
+        dij = torch.stack(dij, dim=0)
+        
+        return dij

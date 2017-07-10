@@ -78,7 +78,7 @@ def main(args):
     elif args.kernel == 'FCG_nodiag_norm':
         kernel = Kernel.FixedComplexGaussian(args.sigma, diag=False, norm=True)
     elif args.kernel == 'QCDAware':
-        kernel = Kernel.QCDAware(1.0, 0.001, 1.)
+        kernel = Kernel.QCDAware(1., 0.7, 1.)
     elif args.kernel == 'FQCDAware':
         kernel = Kernel.FixedQCDAware(1.0, 0.001, 1.)
     elif args.kernel == 'EdgeFeature':
@@ -119,9 +119,9 @@ def main(args):
         pass
 
     if args.kernel == 'QCDAware':
-        alpha = net.kernel.alpha.data
-        beta = net.kernel.beta.data
-        radius = net.kernel.radius.data
+        alpha = net.kernel.alpha.squeeze().data[0]
+        beta = net.kernel.beta.squeeze().data[0] ** 2
+        radius = net.kernel.radius.squeeze().data[0]
         print('alpha : {} -- beta : {} -- radius : {}'.format(alpha, beta, radius))
 
     if args.cuda:
