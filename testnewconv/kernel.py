@@ -55,7 +55,7 @@ def _mmin(tensor):
     return res
 
 
-def _min_nodiag(bmatrix):
+def _renorm(bmatrix):
     nb_node = bmatrix.size()[2]
     if bmatrix.is_cuda:
         eye = torch.cuda.FloatTensor(nb_node, nb_node)
@@ -68,7 +68,11 @@ def _min_nodiag(bmatrix):
     bmat_nodiag = bmatrix + val * eye
     bmat_min, _ = bmat_nodiag.min(1)
 
-    return bmat_min
+    bmat_min = bmat_min.expand_as(bmatrix)
+    bmat_center = (bmatrix - bmat_min) / bmat_min
+    bmat_center = bmat_center + eye  # resets 0s on diagonal
+
+    return bmat_center
 
 
 def _hook_reduce_grad(divider):
@@ -247,7 +251,7 @@ class FixedQCDAware(nn.Module):
 class QCDAware(nn.Module):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
-    def __init__(self, alpha, beta, radius, epsilon=1e-7):
+    def __init__(self, alpha, beta, radius, epsilon=1e-5):
         super(QCDAware, self).__init__()
         self.epsilon = epsilon  # protection against division by 0
 
@@ -272,10 +276,7 @@ class QCDAware(nn.Module):
         min_momenta = _mmin(pow_momenta)
         d_ij_alpha = sqdist * min_momenta
 
-        d_min = _min_nodiag(d_ij_alpha)
-        d_min = (d_min + self.epsilon).expand_as(d_ij_alpha)
-        d_ij_center = (d_ij_alpha - d_min) / d_min
-        # d_ij_center /= 10000
+        d_ij_center = _renorm(d_ij_alpha)
         beta = (self.beta ** 2).expand_as(d_ij_center)
         # beta.register_hook(_hook_reduce_grad(100))
         d_ij_norm = - beta * d_ij_center
@@ -284,7 +285,7 @@ class QCDAware(nn.Module):
         return w_ij
 
     def _softmax(self, dij):
-        batch = dij.size()[0]        
+        batch = dij.size()[0]
         
         dij = torch.unbind(dij, dim=0)
         dij = torch.cat(dij, dim=0)
