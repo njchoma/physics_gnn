@@ -54,3 +54,7 @@ The main arguments used to design a network are :
 You can also specify the number of events used every epoch for training, testing, the frequency at which results will be printed, the learning rate and its rate of decay. Train on GPU with `--cuda`.
 
 The network will be saved every epoch, and some stats will be saved in a csv file.
+
+### NYU Data
+
+### NERSC Data
