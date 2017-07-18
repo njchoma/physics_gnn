@@ -6,7 +6,7 @@
 This repository is organized as such :
 ```
 GCNN/
-	|-- README.md
+    |-- README.md
     |-- main.sh
     |-- script/  # python code
     |   	|-- main.py  # main file : read arguments and calls training and testing functions.
@@ -17,13 +17,13 @@ GCNN/
     |		|-- graphics/  # code for plots
     |		|-- projectNERSC/  # code specific to training/testing on the NERSC data
     |		|-- projectNYU/  # code specific to training/testing on the NYU data
-	|
+    |
     |-- dataNYU  # link to a directory containing NYU data
     |-- dataNERSC  # link to a directory containing NERSC data
     |
     |-- modelsNYU  # directory where trained networks for NYU data are saved
     |-- modelsNERSC  # directory where trained networks for NERSC data are saved
-	|
+    |
     |-- paramNYU.txt  # file created when launching 'main.sh', contains paths to training and testing NYU data
     |-- paramNERSC.txt  # file created when launching 'main.sh', contains paths to training and testing NERSC data
 ```
