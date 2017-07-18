@@ -1,0 +1,207 @@
+import torch
+import torch.nn as nn
+from torch.nn.functional import sigmoid
+from model import operators as op
+from model import multi_operators as ops
+from model import graphconv as gc
+from utils.tensor import spatialnorm
+
+
+class GCNNSingleKernel(nn.Module):
+    """Simple graph neural network : multiple layers of residual
+    graph convolutions, normalization and Relus, followed by a
+    logistic regression.
+    """
+
+    def __init__(self, kernel, frst_fm, fmaps, nb_layer):
+        super(GCNNSingleKernel, self).__init__()
+
+        self.operators = [op.degree, op.adjacency]
+        self.nb_op = 2
+
+        self.kernel = kernel
+        self.fst_gconv = gc.ResGOpConv(frst_fm, fmaps, self.nb_op)
+        self.resgconvs = nn.ModuleList(
+            [gc.ResGOpConv(fmaps, fmaps, self.nb_op)
+             for _ in range(nb_layer - 1)]
+        )
+        self.fcl = nn.Linear(fmaps, 1)
+
+    def forward(self, emb_in):
+
+        # initiate operator
+        adj = self.kernel(emb_in)
+        operators = gc.join_operators(adj, self.operators)
+
+        # apply Graph Convs
+        emb = self.fst_gconv(operators, emb_in)
+        for resgconv in self.resgconvs:
+            emb, _, _ = spatialnorm(emb)
+            emb = resgconv(operators, emb)
+
+        # collapse graph into a single representation (uncomment for different options)
+        emb = emb.mean(2).squeeze(2)
+        # emb = emb.sum(2).squeeze(2)
+        # emb = emb.max(2)[0].squeeze(2)
+
+        # logistic regression
+        emb = self.fcl(emb).squeeze(1)
+        emb = sigmoid(emb)
+
+        if (emb != emb).data.sum() > 0:
+            print('WARNING : NAN')
+
+        return emb
+
+
+class GCNNLayerKernel(nn.Module):
+    """Same as GCNNSingleKernel, but using multiple kernels at the same time.
+    The kernel used is 'Node2Edge'.
+    """
+
+    def __init__(self, kernel_fun, input_fm, node_fm, edge_fm, nb_layer):
+        super(GCNNLayerKernel, self).__init__()
+
+        self.operators = [ops.degree, ops.adjacency]
+        self.nb_op = edge_fm * len(self.operators)  # ops on operators use adjacency
+
+        self.kernel = kernel_fun(edge_fm)
+        self.fst_resgconv = gc.ResGOpConv(input_fm, node_fm, self.nb_op)
+
+        self.resgconvs = nn.ModuleList(
+            [gc.ResGOpConv(node_fm, node_fm, self.nb_op)
+             for _ in range(nb_layer - 1)]
+        )
+
+        self.instance_norm = nn.InstanceNorm1d(1)
+        self.fcl = nn.Linear(node_fm, 1)
+
+    def forward(self, global_input):
+
+        kernel = self.kernel(global_input)
+        if (kernel != kernel).data.sum() > 0:
+            print('NAN in kernel')
+            assert False
+        operators = gc.join_operators(kernel, self.operators)
+        emb = self.fst_resgconv(operators, global_input)
+
+        for resgconv in self.resgconvs:
+            emb, _, _ = spatialnorm(emb)
+            # emb = torch.cat((emb, global_input), dim=1)  # concat (h, x)
+            operators = gc.join_operators(kernel, self.operators)
+            emb = resgconv(operators, emb)
+
+        emb = emb.mean(2).squeeze(2).unsqueeze(1)
+        emb = self.instance_norm(emb).squeeze(1)
+
+        # # logistic regression
+        emb = self.fcl(emb).squeeze(1)
+        emb = sigmoid(emb)
+
+        if (emb != emb).data.sum() > 0:
+            print('WARNING : NAN')
+        return emb
+
+
+class GCNNMultiKernel(nn.Module):
+    """Same as GCNNLayerKernel, but using a different set of kernels at
+    each layer.
+    """
+
+    def __init__(self, kernel_fun, input_fm, node_fm, edge_fm, nb_layer):
+        super(GCNNMultiKernel, self).__init__()
+
+        self.operators = [ops.degree, ops.adjacency]
+        self.nb_op = edge_fm * len(self.operators)  # ops on operators use adjacency
+
+        self.fst_kernel = kernel_fun(edge_fm)
+        self.fst_resgconv = gc.ResGOpConv(input_fm, node_fm, self.nb_op)
+
+        self.kernels = nn.ModuleList(
+            [kernel_fun(edge_fm)
+             for _ in range(nb_layer - 1)]
+        )
+        self.resgconvs = nn.ModuleList(
+            [gc.ResGOpConv(node_fm, node_fm, self.nb_op)
+             for _ in range(nb_layer - 1)]
+        )
+
+        self.instance_norm = nn.InstanceNorm1d(1)
+        self.fcl = nn.Linear(node_fm, 1)
+
+    def forward(self, global_input):
+
+        kernel = self.fst_kernel(global_input)
+        operators = gc.join_operators(kernel, self.operators)
+        emb = self.fst_resgconv(operators, global_input)
+
+        for i, resgconv in enumerate(self.resgconvs):
+            emb, _, _ = spatialnorm(emb)
+            kernel = self.kernels[i](global_input)
+            if (kernel != kernel).data.sum() > 0:
+                print('NAN at index {}'.format(i))
+                assert False
+            operators = gc.join_operators(kernel, self.operators)
+            emb = resgconv(operators, emb)
+
+        emb = emb.mean(2).squeeze(2).unsqueeze(1)
+        emb = self.instance_norm(emb).squeeze(1)
+
+        # # logistic regression
+        emb = self.fcl(emb).squeeze(1)
+        emb = sigmoid(emb)
+
+        if (emb != emb).data.sum() > 0:
+            print('WARNING : NAN')
+        return emb
+
+
+class GCNNEdgeFeature(nn.Module):
+    """Same as GCNNMultiKernel, but using a fully learnt kernel.
+    The kernel used can be 'Node2Edge' or 'GatedNode2Edge'.
+    """
+
+    def __init__(self, kernel, input_fm, node_fm, edge_fm, nb_layer):
+        super(GCNNEdgeFeature, self).__init__()
+
+        self.operators = [ops.degree, ops.adjacency]
+        self.nb_op = edge_fm * len(self.operators)  # ops on operators use adjacency
+
+        self.fst_kernel = kernel(input_fm, edge_fm)
+        self.fst_resgconv = gc.ResGOpConv(input_fm, node_fm, self.nb_op)
+
+        self.kernels = nn.ModuleList(
+            [kernel(input_fm + node_fm, edge_fm)
+             for _ in range(nb_layer - 1)]
+        )
+        self.resgconvs = nn.ModuleList(
+            [gc.ResGOpConv(input_fm + node_fm, node_fm, self.nb_op)
+             for _ in range(nb_layer - 1)]
+        )
+
+        self.instance_norm = nn.InstanceNorm1d(1)
+        self.fcl = nn.Linear(node_fm, 1)
+
+    def forward(self, global_input):
+
+        kernel = self.fst_kernel(global_input)
+        operators = gc.join_operators(kernel, self.operators)
+        emb = self.fst_resgconv(operators, global_input)
+
+        for i, resgconv in enumerate(self.resgconvs):
+            emb, _, _ = spatialnorm(emb)
+            emb = torch.cat((emb, global_input), dim=1)  # concat (h, x)
+            kernel = self.kernels[i](emb)
+            operators = gc.join_operators(kernel, self.operators)
+            emb = resgconv(operators, emb)
+
+        emb = emb.mean(2).squeeze(2).unsqueeze(1)
+        emb = self.instance_norm(emb).squeeze(1)
+
+        # # logistic regression
+        emb = self.fcl(emb).squeeze(1)
+        emb = sigmoid(emb)
+
+        if (emb != emb).data.sum() > 0:
+            print('WARNING : NAN')
+        return emb
