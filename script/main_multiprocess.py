@@ -1,3 +1,4 @@
+import os.path as path
 import argparse
 import multiprocessing
 import main
@@ -34,7 +35,8 @@ def parallel():
     set in parallel.
     """
 
-    with open('args.txt', 'r') as argfile:
+    project_root_dir = path.dirname(path.abspath(path.join(__file__, '..')))
+    with open(path.join(project_root_dir, 'args.txt'), 'r') as argfile:
         args = argfile.read()
     args = [arg for arg in args.split('\n')]
     args = [_read_args_from_string(arg) for arg in args]
