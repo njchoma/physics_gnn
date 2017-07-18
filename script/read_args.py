@@ -65,7 +65,7 @@ def get_fixed_param(data_type, project_root_dir):
         return _get_fixed_param(param_file)
 
     default_data_path = join(project_root_dir, 'data' + data_type + '/')
-    if datatype == 'NYU':
+    if data_type == 'NYU':
         default_train = join(default_data_path, 'train_uncropped.pickle')
         default_testtrain = join(default_data_path, 'train_cropped.pickle')
         default_test = join(default_data_path, 'test_cropped.pickle')
@@ -79,9 +79,6 @@ def get_fixed_param(data_type, project_root_dir):
             "\ntrainfile = {} # path to training data (not cropped)\n".format(default_train)
             + "testtrainfile = {} # path to training data (cropped)\n".format(default_testtrain)
             + "testfile = {} # path to testing data (cropped)\n".format(default_test)
-        )
-    raise FileNotFoundError(
-        "\n'" + param_file + "' created, please provide paths to training and testing sets\n"
         )
 
 
