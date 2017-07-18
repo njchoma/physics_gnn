@@ -8,10 +8,8 @@ from projectNERSC import model_nersc
 from utils.in_out import print_, make_dir_if_not_there
 
 
-def main():
+def main(args):
     """Loads data, recover network then train, test and save network"""
-
-    args = ra.read_args()
 
     if args.data == 'NYU':
         model = model_nyu
@@ -96,4 +94,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    ARGS = ra.read_args()
+    main(ARGS)

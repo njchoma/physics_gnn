@@ -1,4 +1,0 @@
-
-trainfile = /home/gaspar/Desktop/localnewconv/dataNYU/antikt-kt-train-gcnn.pickle # path to training data (not cropped)
-testtrainfile = /home/gaspar/Desktop/localnewconv/dataNYU/antikt-kt-train.pickle # path to training data (cropped)
-testfile = /home/gaspar/Desktop/localnewconv/dataNYU/antikt-kt-test.pickle # path to testing data (cropped)

@@ -1,6 +1,6 @@
+import argparse
 import multiprocessing
 import main
-import argparse
 
 
 def _read_args_from_string(string):
