@@ -4,7 +4,7 @@ from torch.nn.functional import sigmoid
 from model import operators as op
 from model import multi_operators as ops
 from model import graphconv as gc
-from utils.tensor import spatialnorm
+from utils.tensor import spatialnorm, check_for_nan
 
 
 class GCNNSingleKernel(nn.Module):
@@ -25,12 +25,15 @@ class GCNNSingleKernel(nn.Module):
             [gc.ResGOpConv(fmaps, fmaps, self.nb_op)
              for _ in range(nb_layer - 1)]
         )
+        self.instance_norm = nn.InstanceNorm1d(1)
         self.fcl = nn.Linear(fmaps, 1)
 
     def forward(self, emb_in):
 
         # initiate operator
         adj = self.kernel(emb_in)
+        check_for_nan(adj, 'NAN in operators')
+
         operators = gc.join_operators(adj, self.operators)
 
         # apply Graph Convs
@@ -43,10 +46,13 @@ class GCNNSingleKernel(nn.Module):
         emb = emb.mean(2).squeeze(2)
         # emb = emb.sum(2).squeeze(2)
         # emb = emb.max(2)[0].squeeze(2)
+        emb = self.instance_norm(emb.unsqueeze(1)).squeeze(1)
+        check_for_nan(emb, 'nan coming from instance_norm')
 
         # logistic regression
         emb = self.fcl(emb).squeeze(1)
         emb = sigmoid(emb)
+        check_for_nan(emb, 'nan coming from logistic regression')
 
         if (emb != emb).data.sum() > 0:
             print('WARNING : NAN')

@@ -78,7 +78,10 @@ class Node2Edge(nn.Module):
         theta5 = self.theta5.expand(*out_tensor_size)
         eye_t = theta5 * eye
 
-        return relu(max_thx + max_thx + eye_t)
+        adj = max_thx + max_thx + eye_t
+        nonlin_adj = _softmax(adj)
+
+        return nonlin_adj
 
 
 class GatedNode2Edge(nn.Module):

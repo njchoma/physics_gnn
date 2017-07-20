@@ -87,7 +87,7 @@ def init_network(args, frst_fm):
     Input should be the output of `read_args`.
     """
 
-    if args.kernel in ['FCG', 'FCG_nodiag', 'FCG_norm', 'FCG_nodiag_norm', 'FQCDAware', 'QCDAware']:
+    if args.kernel in ['FCG', 'FCG_nodiag', 'FCG_norm', 'FCG_nodiag_norm', 'FQCDAware', 'QCDAware', 'QCDAwareNoNorm']:
         if args.kernel == 'FCG':
             kernel = ker.FixedComplexGaussian(args.sigma)
         elif args.kernel == 'FCG_nodiag':
@@ -100,6 +100,8 @@ def init_network(args, frst_fm):
             kernel = ker.FixedQCDAware(1.0, 0.1)
         elif args.kernel == 'QCDAware':
             kernel = ker.QCDAware(1., 0.7)
+        elif args.kernel == 'QCDAwareNoNorm':
+            kernel = ker.QCDAwareNoNorm(1., 0.7)
 
         return gcnn.GCNNSingleKernel(
             kernel, frst_fm, args.nb_feature_maps, args.nb_layer
@@ -128,7 +130,7 @@ def init_network(args, frst_fm):
             )
 
     else:
-        raise ValueError('Unknown kernel : {}'.format(kernel))
+        raise ValueError('Unknown kernel : {}'.format(args.kernel))
 
 
 def make_net_if_not_there(args, frst_fm, savedir):

@@ -94,3 +94,17 @@ def spatialnorm(emb):
     emb_norm = emb_centered / (var.sqrt() + var_protect).expand_as(emb_centered)
 
     return emb_norm, avg, var
+
+
+def check_for_nan(tensor, error_message, raise_error=True, action=None, args=None):
+    """Checks for NAN values in `tensor`, print `error_message` if there
+    are NAN values, and raises ValueError by default
+    """
+
+    nb_nan = (tensor != tensor).data.sum()
+    if nb_nan > 0:
+        print(error_message)
+        if action is not None:
+            action(*args)
+        if raise_error:
+            raise ValueError('NAN value in network')

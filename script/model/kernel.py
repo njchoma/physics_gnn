@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 from torch.autograd import Variable
-from utils.tensor import variable_as, make_tensor_as, sqdist_, sym_min
+from utils.tensor import variable_as, make_tensor_as, sqdist_, sym_min, check_for_nan
 
 
 """Defines different kernels from the embedding"""
@@ -42,13 +42,18 @@ def _renorm(bmatrix):
     nn.init.eye(eye)
     eye = eye.unsqueeze(0).expand_as(bmatrix)
     
-    bmat_nodiag = bmatrix + 1000 * bmatrix.data.max() * eye  # change diag before min
-    bmat_min, _ = bmat_nodiag.min(1)
-    bmat_min, _ = bmat_min.min(2)
-
-    bmat_min = bmat_min.expand_as(bmatrix)
-    bmat_center = (bmat_nodiag - bmat_min) / bmat_min
-    # bmat_center = bmat_center + eye
+    bmat_nodiag = bmatrix + (1000 * bmatrix.data.max() + 1) * eye  # change diag before min
+    check_for_nan(bmat_nodiag, 'nan in _renorm : bmat_nodiag')
+    bmat_min, i = bmat_nodiag.min(1)
+    bmat_min, j = bmat_min.min(2)
+    check_for_nan(bmat_min, 'nan in _renorm : bmat_min')
+    bmat_min_x = bmat_min.expand_as(bmatrix)
+    zero_div_protec = ((bmat_min == 0).detach().type_as(bmatrix) * 1e-9).expand_as(bmatrix)
+    bmat_center = (bmat_nodiag - bmat_min_x) / (bmat_min_x + zero_div_protec)
+    
+    j = j.data.sum()
+    i = i[0, 0, j].data.sum()
+    check_for_nan(bmat_center, 'nan in _renorm : bmat_center')
 
     return bmat_center
 
@@ -235,18 +240,74 @@ class QCDAware(nn.Module):
         self.softmax = nn.Softmax()
 
     def forward(self, emb):
+        check_for_nan(self.alpha, 'nan in kernel param : alpha')
+        check_for_nan(self.beta, 'nan in kernel param : beta')
+
         sqdist = sqdist_(emb)
-        momentum = emb[:, 4, :]
+        momentum = emb[:, 4, :] + 1e-10
         alpha = self.alpha.expand_as(momentum)
         # alpha.register_hook(_hook_reduce_grad(100))
         pow_momenta = (2 * alpha * momentum.log()).exp()
         min_momenta = sym_min(pow_momenta)
         d_ij_alpha = sqdist * min_momenta
+        check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
 
         d_ij_center = _renorm(d_ij_alpha)
+        check_for_nan(d_ij_center, 'nan in kernel : d_ij_center')
         beta = (self.beta ** 2).expand_as(d_ij_center)
         # beta.register_hook(_hook_reduce_grad(100))
         d_ij_norm = - beta * d_ij_center
+        check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
+        w_ij = self._softmax(d_ij_norm)
+        # w_ij = d_ij_norm.exp()
+
+        return w_ij
+
+    def _softmax(self, dij):
+        batch = dij.size()[0]
+        
+        dij = torch.unbind(dij, dim=0)
+        dij = torch.cat(dij, dim=0)
+        
+        dij = self.softmax(dij)
+        
+        dij = torch.chunk(dij, batch, dim=0)
+        dij = torch.stack(dij, dim=0)
+        
+        return dij
+
+
+class QCDAwareNoNorm(nn.Module):
+    """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
+
+    def __init__(self, alpha, beta, epsilon=1e-5):
+        super(QCDAwareNoNorm, self).__init__()
+        self.epsilon = epsilon  # protection against division by 0
+
+        alpha = Parameter(alpha * (torch.rand(1, 1) * 0.02 + 0.99))
+        beta = Parameter(beta * (torch.rand(1, 1, 1) * 0.02 + 0.99))
+        self.register_parameter('alpha', alpha)
+        self.register_parameter('beta', beta)
+
+        self.softmax = nn.Softmax()
+
+    def forward(self, emb):
+        check_for_nan(self.alpha, 'nan in kernel param : alpha')
+        check_for_nan(self.beta, 'nan in kernel param : beta')
+
+        sqdist = sqdist_(emb)
+        momentum = emb[:, 4, :] + 1e-10
+        alpha = self.alpha.expand_as(momentum)
+        # alpha.register_hook(_hook_reduce_grad(100))
+        pow_momenta = (2 * alpha * momentum.log()).exp()
+        min_momenta = sym_min(pow_momenta)
+        d_ij_alpha = sqdist * min_momenta
+        check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
+
+        beta = (self.beta ** 2).expand_as(d_ij_alpha)
+        # beta.register_hook(_hook_reduce_grad(100))
+        d_ij_norm = - beta * d_ij_alpha
+        check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
         w_ij = self._softmax(d_ij_norm)
         # w_ij = d_ij_norm.exp()
 

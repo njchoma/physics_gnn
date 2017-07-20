@@ -4,6 +4,7 @@ from torch.nn import Parameter
 import torch.nn as nn
 import torch.nn.init
 from torch.nn.functional import relu
+from utils.tensor import check_for_nan
 
 
 def join_operators(adj, operator_iter):
@@ -91,6 +92,10 @@ class GraphOpConv(nn.Module):
 
 
 class ResGOpConv(nn.Module):
+    """Residual graph neural network :
+            RGC(x) = [ GC(x) || relu(GC(x)) ]
+    """
+
     def __init__(self, in_fm, out_fm, nb_op):
         super(ResGOpConv, self).__init__()
 
@@ -104,17 +109,11 @@ class ResGOpConv(nn.Module):
 
     def forward(self, ops, emb_in):
         linear = self.gconv_lin(ops, emb_in)
-
-        if (linear != linear).data.sum() > 0:
-            print('NAN in first gconv : before concat, linear')
-            assert False
+        check_for_nan(linear, 'NAN in resgconv : linear')
 
         nlinear = self.gconv_nlin(ops, emb_in)
+        check_for_nan(nlinear, 'NAN in resgconv : nlinear')
         nlinear = relu(nlinear)
-
-        if (nlinear != nlinear).data.sum() > 0:
-            print('NAN in first gconv : before concat, nlinear')
-            assert False
 
         emb_out = torch.cat((linear, nlinear), 1)
 
