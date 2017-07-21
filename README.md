@@ -58,6 +58,20 @@ The network will be saved every epoch, and some stats will be saved in a csv fil
 
 ## NYU Data
 
+##### Training data
+This data can be loaded with pickle, using:
+`X, y = pickle.load(open("antikt-kt-train-gcnn.pickle", "rb"), encoding="latin1")`
+
+where
+- X is a list of numpy arrays, each of which represents the (final)
+constituents of the jet. That is, X[i] is a (n_constituents x 9)
+array, where the 9 columns respectively correspond to p, eta, phi, E,
+pt, theta, px, py, pz.
+- y is the list of labels (0 or 1s)
+
+##### Cropped and weighted training and testing data for testing
+Use `python script/projectNYU/prepare_data_nyu.py` to create pickle files cropped and weighted from corresponding hdf5 files. 
+
 ## NERSC Data
 
 NERSC data is handle the way it is stored on the NERSC server.
