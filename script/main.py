@@ -1,6 +1,6 @@
 import read_args as ra
-from main_nyu import main_nyu
-from main_nersc import main_nersc
+from projectNYU.main_nyu import main_nyu
+from projectNERSC.main_nersc import main_nersc
 
 
 def main():

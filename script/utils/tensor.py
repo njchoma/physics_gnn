@@ -78,7 +78,7 @@ def sqdist_periodic_(emb):
     """
 
     sqdist1 = sqdist_(emb)
-    emb_pi = torch.cat((emb[:, 0:1, :], (emb[:, 2, :] + pi) % (2 * pi)), 1)
+    emb_pi = torch.cat((emb[:, 0:1, :], (emb[:, 2, :].unsqueeze(1) + pi) % (2 * pi)), 1)
     sqdist2 = sqdist_(emb_pi)
     sqdist = torch.min(sqdist1, sqdist2)
 
