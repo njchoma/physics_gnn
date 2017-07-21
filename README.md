@@ -74,8 +74,8 @@ Here are the data structure assumed and the fields used in those hdf5 files :
 file.h5  # files starting with "GG" are class 1, others are class 0
     |-- event_0
     |   |-- clusE    # Energy of each particle detected
-    |   |-- clusEta  # [Eta wiki](https://en.m.wikipedia.org/wiki/Pseudorapidity)
-    |   |-- clusPhi  # [Phi wiki](https://en.m.wikipedia.org/wiki/Azimuth)
+    |   |-- clusEta  # https://en.m.wikipedia.org/wiki/Pseudorapidity
+    |   |-- clusPhi  # https://en.m.wikipedia.org/wiki/Azimuth
     |   |-- clusEM   # Electromagnetic energy
     |
     |-- event_1
