@@ -1,8 +1,8 @@
 # GCNN
 
-#### graph-convolutions based neural networks and a few applications 
+### graph-convolutions based neural networks and a few applications 
 
-### Code organization
+## Code organization
 This repository is organized as such :
 ```
 GCNN/
@@ -36,13 +36,13 @@ GCNN/
     |-- args.txt  # sequence of arguments for multiprocessing : each line will be used as an independant set of arguments
 ```
 
-### Before training a network
+## Before training a network
 
 `main.sh` contains commented out command lines that launch training on models with different architecture. You can change parameters used to initialize networks, and more importantly you should add `--data NERSC` if you are not running on the default NYU data.
 
 Before training a network, create a link `dataNYU` or `dataNERSC` (depending on the data you want to train on) and run `main.sh` once, specifying the data you want to use : it will create the corresponding `param{}.txt` file and assume default paths. You can modify the path to fit a different organization of your local files. If your file system is the same as the default one, this will simply train on the architecture selected in `main.sh`.
 
-### Training a network
+## Training a network
 
 To train a network, you simply need to launch `main.sh` after adding a command line defining the network you want to train, or use a single command calling `python script/main.py [arguments]`. Run `python script/main.py --help` to see a list of arguments.
 
@@ -56,19 +56,19 @@ You can also specify the number of events used every epoch for training, testing
 
 The network will be saved every epoch, and some stats will be saved in a csv file.
 
-### NYU Data
+## NYU Data
 
-### NERSC Data
+## NERSC Data
 
 NERSC data is handle the way it is stored on the NERSC server.
 
-# Testing and Training sets
+##### Testing and Training sets
 The current code uses files ending in "01.h5" as testing set and those ending in "02.h5" as training set. This can be changed in the code : `script/projectNERSC/model_raw_nersc.py` contains two functions `is_test` and `is_train` taking a file's name as argument, changing those functions result in changing the files used for each set. Be careful when changing those functions not to use files for both sets.
 
-# Event selection for one epoch
+##### Event selection for one epoch
 An epoch is performed on N events by randomly (uniformly) selecting N events in all relevant files. This selection is done at each epoch.
 
-# Data structure details
+##### Data structure details
 Here are the data structure assumed and the fields used in those hdf5 files :
 ```
 file.h5  # files starting with "GG" are class 1, others are class 0
@@ -85,6 +85,6 @@ file.h5  # files starting with "GG" are class 1, others are class 0
 ```
 Those hdf5 are also assumed to have an attribute `nb_event` : `hdf5file['event_idx'].attrs['nb_event']` should return the number of events in the file loaded as `hdf5file = h5py.File(path_to_file, 'r')`.
 
-# DelphesNevents
+##### DelphesNevents
 This file contains a number for each type of hdf5 data file, which is used to compute the weights used for training and testing. 
 
