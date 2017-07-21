@@ -45,7 +45,7 @@ def train_net(net, trainfile, criterion, optimizer, args):
     return epoch_loss_avg
 
 
-def test_net(net, testfile, criterion, args):
+def test_net(net, testfile, criterion, args, savedir):
     """Tests the network, returns the ROC AUC and epoch loss"""
 
     datafile = h5.File(testfile, 'r')
@@ -72,7 +72,7 @@ def test_net(net, testfile, criterion, args):
 
     score = roccurve.roc_score(False)
     type_ = 'train' if 'train' in testfile else 'test'
-    fpr50 = roccurve.plot_roc_curve(args.name, type_, 'models', zooms=[1., 0.001, 0.0001])
+    fpr50 = roccurve.plot_roc_curve(args.name, type_, savedir, zooms=[1., 0.001, 0.0001])
     epoch_loss /= nb_event
     return score, epoch_loss, fpr50
 
