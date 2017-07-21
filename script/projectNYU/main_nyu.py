@@ -7,13 +7,11 @@ from projectNYU import model_nyu as model
 from utils.in_out import print_, make_dir_if_not_there
 
 
-def main_nyu(args):
+def main_nyu(args, project_root_dir):
     """Loads data, recover network then train, test and save network"""
 
-    args.data = 'NYU'
     frst_fm = 6
 
-    project_root_dir = path.dirname(path.abspath(path.join(__file__, '..')))
     modelsdir = path.join(project_root_dir, 'models' + args.data)
     savedir = path.join(modelsdir, args.name)
     make_dir_if_not_there(savedir)
