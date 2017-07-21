@@ -6,7 +6,7 @@ from torch.nn.functional import relu, sigmoid
 from torch.autograd import Variable
 from model import multi_operators as ops
 from model import graphconv as gc
-from utils.tensor import spatialnorm, make_tensor_as, sqdist_, sym_min
+from utils.tensor import spatialnorm, make_tensor_as, sqdist_, sqdist_periodic_, sym_min
 
 
 def resized(param, batchsize):
@@ -15,6 +15,95 @@ def resized(param, batchsize):
     no_bs_weight_shape = param.size()[1:]
     param = param.expand(batchsize, *no_bs_weight_shape)
     return param
+
+
+class MultiQCDAware(nn.Module):
+    """Same as QCDAware kernel, but with multiple kernels for each layer"""
+
+    def __init__(self, edge_feature, periodic=False):
+        super(MultiQCDAware, self).__init__()
+        self.out_feature = edge_feature
+
+        self._declare_parameter('alpha', (1, self.out_feature, 1), 1., 0.01)
+        self._declare_parameter('beta', (1, self.out_feature, 1, 1), 0.7, 0.007)
+
+        self.softmax = nn.Softmax()
+        self.sqdist = sqdist_periodic_ if periodic else sqdist_
+
+    def _declare_parameter(self, name, shape, avg, rand):
+        param = torch.Tensor(*shape)
+        nn.init.uniform(param, avg - rand, avg + rand)
+        self.register_parameter(name, Parameter(param))
+
+    def forward(self, emb):
+        """Computes edge features as :
+            W_ij = \rho(max(\theta12.H_i, \theta12.H_j)
+                   + \theta34.(H_i + H_j) + \theta5.delta(i-j))
+        """
+
+        # preparation
+        batchsize, _, nb_node = emb.size()
+        out_tensor_size = (batchsize, self.out_feature, nb_node, nb_node)
+
+        # d_ij^alpha
+        sqdist = self.sqdist(emb)
+        momentum = emb[:, 4, :]
+        momentum = momentum.unsqueeze(1).expand(batchsize, self.out_feature, nb_node)
+        alpha = self.alpha.expand_as(momentum)
+        pow_momenta = (2 * alpha * momentum.log()).exp()
+        min_momenta = sym_min(pow_momenta)
+        sqdist = sqdist.unsqueeze(1).expand(out_tensor_size)
+        d_ij_alpha = sqdist * min_momenta
+
+        # identity
+        if d_ij_alpha.is_cuda:
+            eye = torch.cuda.FloatTensor(nb_node, nb_node)
+        else:
+            eye = torch.FloatTensor(nb_node, nb_node)
+        eye = Variable(eye)
+        nn.init.eye(eye)
+        eye = eye.unsqueeze(0).unsqueeze(1).expand_as(d_ij_alpha)
+
+        # exclude diagonal from dmin definition
+        val = d_ij_alpha.data.max()
+        tens_nodiag = d_ij_alpha + val * eye
+        tens_min, _ = tens_nodiag.min(2)
+        dmin, _ = tens_min.min(3)
+        zero_div_protec = ((dmin == 0).detach().type_as(d_ij_alpha) * 1e-9).expand_as(d_ij_alpha)
+
+        # center d_ij_alpha
+        dmin_x = dmin.expand_as(d_ij_alpha)
+        d_ij_center = (d_ij_alpha - dmin_x) / (dmin_x + zero_div_protec)
+
+        # exponential amplitude beta
+        beta = (self.beta ** 2).expand_as(d_ij_center)
+        d_ij_norm = - beta * d_ij_center
+
+        # w_ij : softmax on (-beta * d_ij_alpha / dmin)
+        d_ij_norm = d_ij_norm - relu(float('+inf') * eye)  # removes diagonal
+        w_ij = self._softmax(d_ij_norm)
+        # w_ij = d_ij_norm.exp()
+
+        return w_ij
+
+    def _softmax(self, dij):
+        """applies a softmax independantly on each dij[batch, fm, n, :]"""
+
+        batch, edge_fm = dij.size()[0], dij.size()[1]
+
+        dij = torch.unbind(dij, dim=0)
+        dij = torch.cat(dij, dim=0)
+        dij = torch.unbind(dij, dim=0)
+        dij = torch.cat(dij, dim=0)
+
+        dij = self.softmax(dij)
+
+        dij = torch.chunk(dij, batch * edge_fm, dim=0)
+        dij = torch.stack(dij, dim=0)
+        dij = torch.chunk(dij, batch, dim=0)
+        dij = torch.stack(dij, dim=0)
+
+        return dij
 
 
 class Node2Edge(nn.Module):
@@ -101,92 +190,4 @@ class GatedNode2Edge(nn.Module):
         adj = adj * gate
 
         return adj
-
-
-class MultiQCDAware(nn.Module):
-    """Same as QCDAware kernel, but with multiple kernels for each layer"""
-
-    def __init__(self, edge_feature):
-        super(MultiQCDAware, self).__init__()
-        self.out_feature = edge_feature
-
-        self._declare_parameter('alpha', (1, self.out_feature, 1), 1., 0.01)
-        self._declare_parameter('beta', (1, self.out_feature, 1, 1), 0.7, 0.007)
-
-        self.softmax = nn.Softmax()
-
-    def _declare_parameter(self, name, shape, avg, rand):
-        param = torch.Tensor(*shape)
-        nn.init.uniform(param, avg - rand, avg + rand)
-        self.register_parameter(name, Parameter(param))
-
-    def forward(self, emb):
-        """Computes edge features as :
-            W_ij = \rho(max(\theta12.H_i, \theta12.H_j)
-                   + \theta34.(H_i + H_j) + \theta5.delta(i-j))
-        """
-
-        # preparation
-        batchsize, _, nb_node = emb.size()
-        out_tensor_size = (batchsize, self.out_feature, nb_node, nb_node)
-
-        # d_ij^alpha
-        sqdist = sqdist_(emb)
-        momentum = emb[:, 4, :]
-        momentum = momentum.unsqueeze(1).expand(batchsize, self.out_feature, nb_node)
-        alpha = self.alpha.expand_as(momentum)
-        pow_momenta = (2 * alpha * momentum.log()).exp()
-        min_momenta = sym_min(pow_momenta)
-        sqdist = sqdist.unsqueeze(1).expand(out_tensor_size)
-        d_ij_alpha = sqdist * min_momenta
-
-        # identity
-        if d_ij_alpha.is_cuda:
-            eye = torch.cuda.FloatTensor(nb_node, nb_node)
-        else:
-            eye = torch.FloatTensor(nb_node, nb_node)
-        eye = Variable(eye)
-        nn.init.eye(eye)
-        eye = eye.unsqueeze(0).unsqueeze(1).expand_as(d_ij_alpha)
-
-        # exclude diagonal from dmin definition
-        val = d_ij_alpha.data.max()
-        tens_nodiag = d_ij_alpha + val * eye
-        tens_min, _ = tens_nodiag.min(2)
-        dmin, _ = tens_min.min(3)
-        zero_div_protec = ((dmin == 0).detach().type_as(d_ij_alpha) * 1e-9).expand_as(d_ij_alpha)
-
-        # center d_ij_alpha
-        dmin_x = dmin.expand_as(d_ij_alpha)
-        d_ij_center = (d_ij_alpha - dmin_x) / (dmin_x + zero_div_protec)
-
-        # exponential amplitude beta
-        beta = (self.beta ** 2).expand_as(d_ij_center)
-        d_ij_norm = - beta * d_ij_center
-
-        # w_ij : softmax on (-beta * d_ij_alpha / dmin)
-        d_ij_norm = d_ij_norm - relu(float('+inf') * eye)  # removes diagonal
-        w_ij = self._softmax(d_ij_norm)
-        # w_ij = d_ij_norm.exp()
-
-        return w_ij
-
-    def _softmax(self, dij):
-        """applies a softmax independantly on each dij[batch, fm, n, :]"""
-
-        batch, edge_fm = dij.size()[0], dij.size()[1]
-
-        dij = torch.unbind(dij, dim=0)
-        dij = torch.cat(dij, dim=0)
-        dij = torch.unbind(dij, dim=0)
-        dij = torch.cat(dij, dim=0)
-
-        dij = self.softmax(dij)
-
-        dij = torch.chunk(dij, batch * edge_fm, dim=0)
-        dij = torch.stack(dij, dim=0)
-        dij = torch.chunk(dij, batch, dim=0)
-        dij = torch.stack(dij, dim=0)
-
-        return dij
 

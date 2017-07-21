@@ -87,21 +87,23 @@ def init_network(args, frst_fm):
     Input should be the output of `read_args`.
     """
 
+    loop2pi = args.data == 'NERSC'  # in NERSC data, phi is 2pi-periodic
+
     if args.kernel in ['FCG', 'FCG_nodiag', 'FCG_norm', 'FCG_nodiag_norm', 'FQCDAware', 'QCDAware', 'QCDAwareNoNorm']:
         if args.kernel == 'FCG':
-            kernel = ker.FixedComplexGaussian(args.sigma)
+            kernel = ker.FixedComplexGaussian(args.sigma, periodic=loop2pi)
         elif args.kernel == 'FCG_nodiag':
-            kernel = ker.FixedComplexGaussian(args.sigma, diag=False)
+            kernel = ker.FixedComplexGaussian(args.sigma, diag=False, periodic=loop2pi)
         elif args.kernel == 'FCG_norm':
-            kernel = ker.FixedComplexGaussian(args.sigma, norm=True)
+            kernel = ker.FixedComplexGaussian(args.sigma, norm=True, periodic=loop2pi)
         elif args.kernel == 'FCG_nodiag_norm':
-            kernel = ker.FixedComplexGaussian(args.sigma, diag=False, norm=True)
+            kernel = ker.FixedComplexGaussian(args.sigma, diag=False, norm=True, periodic=loop2pi)
         elif args.kernel == 'FQCDAware':
-            kernel = ker.FixedQCDAware(1.0, 0.1)
+            kernel = ker.FixedQCDAware(1.0, 0.1, periodic=loop2pi)
         elif args.kernel == 'QCDAware':
-            kernel = ker.QCDAware(1., 0.7)
+            kernel = ker.QCDAware(1., 0.7, periodic=loop2pi)
         elif args.kernel == 'QCDAwareNoNorm':
-            kernel = ker.QCDAwareNoNorm(1., 0.7)
+            kernel = ker.QCDAwareNoNorm(1., 0.7, periodic=loop2pi)
 
         return gcnn.GCNNSingleKernel(
             kernel, frst_fm, args.nb_feature_maps, args.nb_layer
@@ -110,13 +112,15 @@ def init_network(args, frst_fm):
     elif args.kernel == 'LayerQCDAware':
         kernel = mker.MultiQCDAware
         return gcnn.GCNNLayerKernel(
-            kernel, frst_fm, args.nb_feature_maps, args.nb_edge_feature, args.nb_layer
+            kernel, frst_fm, args.nb_feature_maps, args.nb_edge_feature,
+            args.nb_layer, periodic=loop2pi
             )
 
     elif args.kernel == 'MultiQCDAware':
         kernel = mker.MultiQCDAware
         return gcnn.GCNNMultiKernel(
-            kernel, frst_fm, args.nb_feature_maps, args.nb_edge_feature, args.nb_layer
+            kernel, frst_fm, args.nb_feature_maps, args.nb_edge_feature,
+            args.nb_layer, periodic=loop2pi
             )
 
     elif args.kernel in ['EdgeFeature', 'GatedEdgeFeature']:

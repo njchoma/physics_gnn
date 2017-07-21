@@ -1,5 +1,6 @@
 import torch
 from torch.autograd import Variable
+from math import pi
 
 
 def variable_as(tensor1, tensor2):
@@ -66,9 +67,23 @@ def sqdist_(emb):
     coord = coord.unsqueeze(3).expand(batch, 2, nb_node, nb_node)
     coord_t = coord.transpose(2, 3)
     diff = coord - coord_t
-    sqdist = (diff ** 2).sum(1).squeeze(1) 
+    sqdist = (diff ** 2).sum(1).squeeze(1)
 
     return sqdist
+
+
+def sqdist_periodic_(emb):
+    """Squarred euclidean distance over embedding (phi, eta) with
+    2pi-periodicity over phi
+    """
+
+    sqdist1 = sqdist_(emb)
+    emb_pi = torch.cat((emb[:, 0:1, :], (emb[:, 2, :] + pi) % (2 * pi)), 1)
+    sqdist2 = sqdist_(emb_pi)
+    sqdist = torch.min(sqdist1, sqdist2)
+
+    return sqdist
+
 
 
 def spatialnorm(emb):

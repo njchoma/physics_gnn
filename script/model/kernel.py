@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 from torch.autograd import Variable
-from utils.tensor import variable_as, make_tensor_as, sqdist_, sym_min, check_for_nan
+from utils.tensor import variable_as, make_tensor_as, sqdist_, sqdist_periodic_, sym_min, check_for_nan
 
 
 """Defines different kernels from the embedding"""
@@ -60,16 +60,17 @@ def _renorm(bmatrix):
 
 class FixedGaussian(nn.Module):
     """Gaussian kernel with fixed sigma"""
-    def __init__(self, sigma, diag=True, norm=False):
+    def __init__(self, sigma, diag=True, norm=False, periodic=False):
         super(FixedGaussian, self).__init__()
         self.sigma = sigma
         self.diag = diag
         self.norm = norm
+        self.sqdist = sqdist_periodic_ if periodic else sqdist_
 
     def forward(self, emb):
         """takes the exponential of squared distances"""
 
-        adj = gaussian(sqdist_(emb), self.sigma)
+        adj = gaussian(self.sqdist(emb), self.sigma)
         if not self.diag:
             adj = _delete_diag(adj)
         if self.norm:
@@ -83,11 +84,12 @@ class FixedComplexGaussian(nn.Module):
     introducing the orientation of `emb_i - emb_j` in `adj_ij`
     """
 
-    def __init__(self, sigma, diag=True, norm=False):
+    def __init__(self, sigma, diag=True, norm=False, periodic=False):
         super(FixedComplexGaussian, self).__init__()
         self.sigma = sigma
         self.diag = diag
         self.norm = norm
+        self.sqdist = sqdist_periodic_ if periodic else sqdist_
 
     def forward(self, emb):
         """takes the exponential of squared distances,
@@ -95,7 +97,7 @@ class FixedComplexGaussian(nn.Module):
         """
 
         # modulus
-        adj = gaussian(sqdist_(emb), self.sigma)
+        adj = gaussian(self.sqdist(emb), self.sigma)
         if not self.diag:
             adj = _delete_diag(adj)
         if self.norm:
@@ -122,17 +124,18 @@ class FixedComplexGaussian(nn.Module):
 
 class Gaussian(nn.Module):
     """Gaussian kernel"""
-    def __init__(self, diag=True, norm=False):
+    def __init__(self, diag=True, norm=False, periodic=False):
         super(Gaussian, self).__init__()
         sigma = Parameter(torch.rand(1) * 0.02 + 0.99)
         self.register_parameter('sigma', sigma)  # Uniform on [0.9, 1.1]
         self.diag = diag
         self.norm = norm
+        self.sqdist = sqdist_periodic_ if periodic else sqdist_
 
     def forward(self, emb):
         """takes the exponential of squared distances"""
 
-        adj = gaussian(sqdist_(emb), self.sigma)
+        adj = gaussian(self.sqdist(emb), self.sigma)
         if not self.diag:
             adj = _delete_diag(adj)
         if self.norm:
@@ -146,12 +149,13 @@ class ComplexGaussian(nn.Module):
     introducing the orientation of `emb_i - emb_j` in `adj_ij`
     """
 
-    def __init__(self, diag=True, norm=False):
+    def __init__(self, diag=True, norm=False, periodic=False):
         super(ComplexGaussian, self).__init__()
         sigma = Parameter(torch.rand(1) * 0.02 + 0.99)
         self.register_parameter('sigma', sigma)  # Uniform on [0.9, 1.1]
         self.diag = diag
         self.norm = norm
+        self.sqdist = sqdist_periodic_ if periodic else sqdist_
 
     def forward(self, emb):
         """takes the exponential of squared distances,
@@ -159,7 +163,7 @@ class ComplexGaussian(nn.Module):
         """
 
         # modulus
-        adj = gaussian(sqdist_(emb), self.sigma)
+        adj = gaussian(sqdist(emb), self.sigma)
         if not self.diag:
             adj = _delete_diag(adj)
         if self.norm:
@@ -187,13 +191,14 @@ class ComplexGaussian(nn.Module):
 class QCDDist(nn.Module):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
-    def __init__(self, alpha, radius):
+    def __init__(self, alpha, radius, periodic=False):
         super(QCDDist, self).__init__()
         self.alpha = alpha
         self.radius = radius
+        self.sqdist = sqdist_periodic_ if periodic else sqdist_
 
     def forward(self, emb):
-        sqdist = sqdist_(emb) / (self.radius ** 2)
+        sqdist = self.sqdist(emb) / (self.radius ** 2)
         pow_momenta = (2 * self.alpha * emb[:, 4, :].log()).exp()
         min_momenta = sym_min(pow_momenta)
         d_ij = sqdist * min_momenta
@@ -204,11 +209,12 @@ class QCDDist(nn.Module):
 class FixedQCDAware(nn.Module):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
-    def __init__(self, alpha, beta, epsilon=1e-7):
+    def __init__(self, alpha, beta, periodic=False, epsilon=1e-7):
         super(FixedQCDAware, self).__init__()
         self.alpha = alpha
         self.beta = beta
         self.epsilon = epsilon  # protection against division by 0
+        self.sqdist = sqdist_periodic_ if periodic else sqdist_
 
     def forward(self, emb):
         sqdist = sqdist_(emb)
@@ -228,9 +234,8 @@ class FixedQCDAware(nn.Module):
 class QCDAware(nn.Module):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
-    def __init__(self, alpha, beta, epsilon=1e-5):
+    def __init__(self, alpha, beta, periodic=False):
         super(QCDAware, self).__init__()
-        self.epsilon = epsilon  # protection against division by 0
 
         alpha = Parameter(alpha * (torch.rand(1, 1) * 0.02 + 0.99))
         beta = Parameter(beta * (torch.rand(1, 1, 1) * 0.02 + 0.99))
@@ -238,12 +243,13 @@ class QCDAware(nn.Module):
         self.register_parameter('beta', beta)
 
         self.softmax = nn.Softmax()
+        self.sqdist = sqdist_periodic_ if periodic else sqdist_
 
     def forward(self, emb):
         check_for_nan(self.alpha, 'nan in kernel param : alpha')
         check_for_nan(self.beta, 'nan in kernel param : beta')
 
-        sqdist = sqdist_(emb)
+        sqdist = self.sqdist(emb)
         momentum = emb[:, 4, :] + 1e-10
         alpha = self.alpha.expand_as(momentum)
         # alpha.register_hook(_hook_reduce_grad(100))
@@ -280,22 +286,22 @@ class QCDAware(nn.Module):
 class QCDAwareNoNorm(nn.Module):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
-    def __init__(self, alpha, beta, epsilon=1e-5):
+    def __init__(self, alpha, beta, periodic=False):
         super(QCDAwareNoNorm, self).__init__()
-        self.epsilon = epsilon  # protection against division by 0
 
         alpha = Parameter(alpha * (torch.rand(1, 1) * 0.02 + 0.99))
         beta = Parameter(beta * (torch.rand(1, 1, 1) * 0.02 + 0.99))
         self.register_parameter('alpha', alpha)
         self.register_parameter('beta', beta)
 
+        self.sqdist = sqdist_periodic_ if periodic else sqdist_
         self.softmax = nn.Softmax()
 
     def forward(self, emb):
         check_for_nan(self.alpha, 'nan in kernel param : alpha')
         check_for_nan(self.beta, 'nan in kernel param : beta')
 
-        sqdist = sqdist_(emb)
+        sqdist = self.sqdist(emb)
         momentum = emb[:, 4, :] + 1e-10
         alpha = self.alpha.expand_as(momentum)
         # alpha.register_hook(_hook_reduce_grad(100))

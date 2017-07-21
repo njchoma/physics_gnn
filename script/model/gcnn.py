@@ -65,14 +65,14 @@ class GCNNLayerKernel(nn.Module):
     The kernel used is 'Node2Edge'.
     """
 
-    def __init__(self, kernel_fun, input_fm, node_fm, edge_fm, nb_layer):
+    def __init__(self, kernel_fun, input_fm, node_fm, edge_fm, nb_layer, periodic=False):
         super(GCNNLayerKernel, self).__init__()
 
         self.operators = [ops.degree, ops.adjacency]
         self.nb_op = edge_fm * len(self.operators)  # ops on operators use adjacency
 
         self.instance_norm_in = nn.InstanceNorm1d(input_fm)
-        self.kernel = kernel_fun(edge_fm)
+        self.kernel = kernel_fun(edge_fm, periodic)
         self.fst_resgconv = gc.ResGOpConv(input_fm, node_fm, self.nb_op)
 
         self.resgconvs = nn.ModuleList(
@@ -114,17 +114,17 @@ class GCNNMultiKernel(nn.Module):
     each layer.
     """
 
-    def __init__(self, kernel_fun, input_fm, node_fm, edge_fm, nb_layer):
+    def __init__(self, kernel_fun, input_fm, node_fm, edge_fm, nb_layer, periodic=False):
         super(GCNNMultiKernel, self).__init__()
 
         self.operators = [ops.degree, ops.adjacency]
         self.nb_op = edge_fm * len(self.operators)  # ops on operators use adjacency
 
-        self.fst_kernel = kernel_fun(edge_fm)
+        self.fst_kernel = kernel_fun(edge_fm, periodic)
         self.fst_resgconv = gc.ResGOpConv(input_fm, node_fm, self.nb_op)
 
         self.kernels = nn.ModuleList(
-            [kernel_fun(edge_fm)
+            [kernel_fun(edge_fm, periodic)
              for _ in range(nb_layer - 1)]
         )
         self.resgconvs = nn.ModuleList(
