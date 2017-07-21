@@ -10,8 +10,6 @@ GCNN/
     |-- main.sh
     |-- script/  # python code
     |   |-- main.py            # main file : reads arguments, call main_nyu or main_nersc to train and test
-    |   |-- main_nyu.py        # train & test with projectNYU on data from dataNYU
-    |   |-- main_nersc.py      # train & test with projectNERSC on data from dataNERSC
     |	|-- main_multiprocess  # runs the main file on a list of arguments contained in GCNN/args.txt
     |	|-- read_args.py       # functions related to argument reading and network initialization
     |	|-- model/             # code related to graph convolutions, kernels and networks
