@@ -7,7 +7,7 @@ from projectNYU import model_nyu as model
 from utils.in_out import print_, make_dir_if_not_there
 
 
-def main(args):
+def main_nyu(args):
     """Loads data, recover network then train, test and save network"""
 
     args.data = 'NYU'
@@ -86,8 +86,3 @@ def main(args):
             pickle.dump(net, fileout)
         print_('saved\n', args.quiet)
         learning_rate *= lr_decay
-
-
-if __name__ == '__main__':
-    ARGS = ra.read_args()
-    main(ARGS)
