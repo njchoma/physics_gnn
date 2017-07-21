@@ -59,7 +59,7 @@ The network will be saved every epoch, and some stats will be saved in a csv fil
 ## NYU Data
 
 ##### Training data
-This data can be loaded with pickle, using:
+This data can be loaded with pickle, using:\
 `X, y = pickle.load(open("antikt-kt-train-gcnn.pickle", "rb"), encoding="latin1")`
 
 where
