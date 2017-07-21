@@ -107,15 +107,15 @@ def init_network(args, frst_fm):
             kernel, frst_fm, args.nb_feature_maps, args.nb_layer
             )
 
-    elif args.kernel == 'MultiQCDAware':
-        kernel = mker.MultiQCDAware
-        return gcnn.GCNNMultiKernel(
-            kernel, frst_fm, args.nb_feature_maps, args.nb_edge_feature, args.nb_layer
-            )
-
     elif args.kernel == 'LayerQCDAware':
         kernel = mker.MultiQCDAware
         return gcnn.GCNNLayerKernel(
+            kernel, frst_fm, args.nb_feature_maps, args.nb_edge_feature, args.nb_layer
+            )
+
+    elif args.kernel == 'MultiQCDAware':
+        kernel = mker.MultiQCDAware
+        return gcnn.GCNNMultiKernel(
             kernel, frst_fm, args.nb_feature_maps, args.nb_edge_feature, args.nb_layer
             )
 

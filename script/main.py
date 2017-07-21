@@ -34,8 +34,10 @@ def main(args):
 
     if args.cuda:
         net = net.cuda()
+        print('Working on GPU')
     else:
         net = net.cpu()
+        print('Working on CPU')
 
     criterion = nn.functional.binary_cross_entropy
     learning_rate = args.lrate

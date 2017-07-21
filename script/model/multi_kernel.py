@@ -154,10 +154,11 @@ class MultiQCDAware(nn.Module):
         tens_nodiag = d_ij_alpha + val * eye
         tens_min, _ = tens_nodiag.min(2)
         dmin, _ = tens_min.min(3)
+        zero_div_protec = ((dmin == 0).detach().type_as(d_ij_alpha) * 1e-9).expand_as(d_ij_alpha)
 
         # center d_ij_alpha
-        dmin = dmin.expand_as(d_ij_alpha)
-        d_ij_center = (d_ij_alpha - dmin) / dmin  # constant irrelevant because of softmax
+        dmin_x = dmin.expand_as(d_ij_alpha)
+        d_ij_center = (d_ij_alpha - dmin_x) / (dmin_x + zero_div_protec)
 
         # exponential amplitude beta
         beta = (self.beta ** 2).expand_as(d_ij_center)

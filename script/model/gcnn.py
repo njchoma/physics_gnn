@@ -71,6 +71,7 @@ class GCNNLayerKernel(nn.Module):
         self.operators = [ops.degree, ops.adjacency]
         self.nb_op = edge_fm * len(self.operators)  # ops on operators use adjacency
 
+        self.instance_norm_in = nn.InstanceNorm1d(input_fm)
         self.kernel = kernel_fun(edge_fm)
         self.fst_resgconv = gc.ResGOpConv(input_fm, node_fm, self.nb_op)
 
@@ -79,7 +80,7 @@ class GCNNLayerKernel(nn.Module):
              for _ in range(nb_layer - 1)]
         )
 
-        self.instance_norm = nn.InstanceNorm1d(1)
+        self.instance_norm_out = nn.InstanceNorm1d(1)
         self.fcl = nn.Linear(node_fm, 1)
 
     def forward(self, global_input):
@@ -89,18 +90,17 @@ class GCNNLayerKernel(nn.Module):
             print('NAN in kernel')
             assert False
         operators = gc.join_operators(kernel, self.operators)
-        emb = self.fst_resgconv(operators, global_input)
+        emb = self.instance_norm_in(global_input)
+        emb = self.fst_resgconv(operators, emb)
 
         for resgconv in self.resgconvs:
             emb, _, _ = spatialnorm(emb)
-            # emb = torch.cat((emb, global_input), dim=1)  # concat (h, x)
-            operators = gc.join_operators(kernel, self.operators)
             emb = resgconv(operators, emb)
 
-        emb = emb.mean(2).squeeze(2).unsqueeze(1)
-        emb = self.instance_norm(emb).squeeze(1)
+        emb = emb.mean(2).squeeze(2)
+        emb = self.instance_norm_out(emb.unsqueeze(1)).squeeze(1)
 
-        # # logistic regression
+        # logistic regression
         emb = self.fcl(emb).squeeze(1)
         emb = sigmoid(emb)
 
