@@ -10,6 +10,7 @@ from utils.in_out import print_, make_dir_if_not_there
 def main(args):
     """Loads data, recover network then train, test and save network"""
 
+    args.data = 'NERSC'
     frst_fm = 5
 
     project_root_dir = path.dirname(path.abspath(path.join(__file__, '..')))
@@ -86,5 +87,4 @@ def main(args):
 
 if __name__ == '__main__':
     ARGS = ra.read_args()
-    ARGS.data = 'NERSC'
     main(ARGS)

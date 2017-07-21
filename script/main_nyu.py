@@ -3,22 +3,15 @@ import pickle
 import torch
 import torch.nn as nn
 import read_args as ra
-from projectNYU import model_nyu
-from projectNERSC import model_nersc
+from projectNYU import model_nyu as model
 from utils.in_out import print_, make_dir_if_not_there
 
 
 def main(args):
     """Loads data, recover network then train, test and save network"""
 
-    if args.data == 'NYU':
-        model = model_nyu
-        frst_fm = 6
-    elif args.data == 'NERSC':
-        model = model_nersc
-        frst_fm = 5
-    else:
-        raise ValueError('Unknown project : {}'.format(args.data))
+    args.data = 'NYU'
+    frst_fm = 6
 
     project_root_dir = path.dirname(path.abspath(path.join(__file__, '..')))
     modelsdir = path.join(project_root_dir, 'models' + args.data)
