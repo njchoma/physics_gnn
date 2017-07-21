@@ -47,7 +47,7 @@ Before training a network, create a link `dataNYU` or `dataNERSC` (depending on 
 To train a network, you simply need to launch `main.sh` after adding a command line defining the network you want to train, or use a single command calling `python script/main.py [arguments]`. Run `python script/main.py --help` to see a list of arguments.
 
 The main arguments used to design a network are :
-* `--kernel str` : type of kernel / architecture used.\
+* `--kernel str` : type of kernel / architecture used
 * `--fm int` : number of node feature maps at each layer
 * `--edge_fm int` : number of edge feature maps at each layer (used only with multikernels)
 * `--depth int` : number of layers in the network
