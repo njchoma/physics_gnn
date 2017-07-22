@@ -13,7 +13,7 @@ from utils.in_out import print_
 def train_net(net, datadir, criterion, optimizer, args):
     """Trains net for one epoch using criterion loss and optimizer"""
 
-    dataloader, nb_event = load_raw_data(datadir, _is_train_file)
+    dataloader, nb_event = load_raw_data(datadir, args.nbtrain, _is_train_file)
     epoch_loss = 0
     step_loss = 0
 
@@ -48,7 +48,7 @@ def test_net(net, datadir, datatype, criterion, args, savedir):
     """Tests the network, returns the ROC AUC and epoch loss"""
 
     is_used = _is_train_file if datatype == 'train' else _is_test_file
-    dataloader, nb_event = load_raw_data(datadir, is_used)
+    dataloader, nb_event = load_raw_data(datadir,args.nbtest, is_used)
     epoch_loss = 0
     roccurve = ROCCurve()
 
@@ -79,15 +79,15 @@ def _is_test_file(filename):
     return filename.endswith('01.h5')
 
 
-def load_raw_data(datadir, is_used):
+def load_raw_data(datadir, nb_ex, is_used):
     """creates a data loader containing (data, label, weight)"""
 
     nb_events_files, all_event_coords_ = all_event_coords(datadir, is_used)
     weight_factors = init_weight_factors(is_used, datadir)
 
+    nb_events_ = min(sum(nb_events_files), nb_ex)
     data_loader = (load_raw_event(datadir, event_coord, weight_factors)
-                   for event_coord in permutation(all_event_coords_))
-    nb_events_ = sum(nb_events_files)
+                   for event_coord in permutation(all_event_coords_)[:nb_events_])
 
     return data_loader, nb_events_
 
