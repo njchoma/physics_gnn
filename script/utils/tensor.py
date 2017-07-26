@@ -123,3 +123,41 @@ def check_for_nan(tensor, error_message, raise_error=True, action=None, args=Non
             action(*args)
         if raise_error:
             raise ValueError('NAN value in network')
+
+
+def check_for_inf(tensor, error_message, raise_error=True, action=None, args=None):
+    """Checks for +inf values in `tensor`, print `error_message` if there
+    are NAN values, and raises ValueError by default
+    """
+
+    nb_inf = (tensor == float('+inf')).data.sum()
+    if nb_inf > 0:
+        print(error_message)
+        if action is not None:
+            action(*args)
+        if raise_error:
+            raise ValueError('NAN value in network')
+
+
+class HookCheckForNan:
+    """Backward hook, calls `check_for_nan` on gradient during back propagation
+    with arguments provided during initialization.
+    """
+
+    def __init__(self, error_message, raise_error=True, action=None, args=None):
+        super(HookCheckForNan, self).__init__()
+        self.error_message = error_message
+        self.raise_error = raise_error
+        self.action = action
+        self.args = args
+
+    def __call__(self, grad):
+        if self.action is None:
+            check_for_nan(grad, self.error_message, self.raise_error)
+        elif self.args is None:
+            check_for_nan(grad, self.error_message, self.raise_error,
+                          action=self.action, args=grad.data)
+        else:
+            check_for_nan(grad, self.error_message, self.raise_error,
+                          action=self.action, args=self.args)
+

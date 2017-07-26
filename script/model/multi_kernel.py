@@ -24,7 +24,7 @@ class MultiQCDAware(nn.Module):
         super(MultiQCDAware, self).__init__()
         self.out_feature = edge_feature
 
-        self._declare_parameter('alpha', (1, self.out_feature, 1), 1., 0.01)
+        self._declare_parameter('alpha', (1, self.out_feature, 1), 0.5, 0.01)
         self._declare_parameter('beta', (1, self.out_feature, 1, 1), 0.7, 0.007)
 
         self.softmax = nn.Softmax()

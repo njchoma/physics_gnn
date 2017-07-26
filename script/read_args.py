@@ -99,7 +99,7 @@ def init_network(args, frst_fm):
         elif args.kernel == 'FCG_nodiag_norm':
             kernel = ker.FixedComplexGaussian(args.sigma, diag=False, norm=True, periodic=loop2pi)
         elif args.kernel == 'FQCDAware':
-            kernel = ker.FixedQCDAware(1.0, 0.1, periodic=loop2pi)
+            kernel = ker.FixedQCDAware(0.5, 0.1, periodic=loop2pi)
         elif args.kernel == 'QCDAware':
             kernel = ker.QCDAware(1., 0.7, periodic=loop2pi)
         elif args.kernel == 'QCDAwareNoNorm':

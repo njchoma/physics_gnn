@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 from torch.autograd import Variable
-from utils.tensor import variable_as, make_tensor_as, sqdist_, sqdist_periodic_, sym_min, check_for_nan
+import utils.tensor as ts
 
 
 """Defines different kernels from the embedding"""
@@ -17,8 +17,8 @@ def gaussian(sqdist, sigma):
 
 def _delete_diag(adj):
     nb_node = adj.size()[1]
-    diag_mask = make_tensor_as(adj, (nb_node, nb_node))
-    diag_mask = variable_as(diag_mask, adj)
+    diag_mask = ts.make_tensor_as(adj, (nb_node, nb_node))
+    diag_mask = ts.variable_as(diag_mask, adj)
     diag_mask = diag_mask.unsqueeze(0).expand_as(adj)
     adj.masked_fill_(diag_mask, 0)
 
@@ -41,19 +41,18 @@ def _renorm(bmatrix):
     eye = Variable(eye)
     nn.init.eye(eye)
     eye = eye.unsqueeze(0).expand_as(bmatrix)
-    
+
     bmat_nodiag = bmatrix + (1000 * bmatrix.data.max() + 1) * eye  # change diag before min
-    check_for_nan(bmat_nodiag, 'nan in _renorm : bmat_nodiag')
-    bmat_min, i = bmat_nodiag.min(1)
-    bmat_min, j = bmat_min.min(2)
-    check_for_nan(bmat_min, 'nan in _renorm : bmat_min')
+    ts.check_for_nan(bmat_nodiag, 'nan in _renorm : bmat_nodiag')
+    bmat_min, _ = bmat_nodiag.min(1)
+    bmat_min, _ = bmat_min.min(2)
+    ts.check_for_nan(bmat_min, 'nan in _renorm : bmat_min')
     bmat_min_x = bmat_min.expand_as(bmatrix)
     zero_div_protec = ((bmat_min == 0).detach().type_as(bmatrix) * 1e-9).expand_as(bmatrix)
     bmat_center = (bmat_nodiag - bmat_min_x) / (bmat_min_x + zero_div_protec)
-    
-    j = j.data.sum()
-    i = i[0, 0, j].data.sum()
-    check_for_nan(bmat_center, 'nan in _renorm : bmat_center')
+
+    ts.check_for_nan(bmat_center, 'NAN in _renorm : bmat_center')
+    ts.check_for_inf(bmat_center, 'INF in _renorm : bmat_center', action=print, args=(bmat_center, bmatrix, bmat_min))
 
     return bmat_center
 
@@ -65,7 +64,7 @@ class FixedGaussian(nn.Module):
         self.sigma = sigma
         self.diag = diag
         self.norm = norm
-        self.sqdist = sqdist_periodic_ if periodic else sqdist_
+        self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
     def forward(self, emb):
         """takes the exponential of squared distances"""
@@ -89,7 +88,7 @@ class FixedComplexGaussian(nn.Module):
         self.sigma = sigma
         self.diag = diag
         self.norm = norm
-        self.sqdist = sqdist_periodic_ if periodic else sqdist_
+        self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
     def forward(self, emb):
         """takes the exponential of squared distances,
@@ -130,7 +129,7 @@ class Gaussian(nn.Module):
         self.register_parameter('sigma', sigma)  # Uniform on [0.9, 1.1]
         self.diag = diag
         self.norm = norm
-        self.sqdist = sqdist_periodic_ if periodic else sqdist_
+        self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
     def forward(self, emb):
         """takes the exponential of squared distances"""
@@ -155,7 +154,7 @@ class ComplexGaussian(nn.Module):
         self.register_parameter('sigma', sigma)  # Uniform on [0.9, 1.1]
         self.diag = diag
         self.norm = norm
-        self.sqdist = sqdist_periodic_ if periodic else sqdist_
+        self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
     def forward(self, emb):
         """takes the exponential of squared distances,
@@ -163,7 +162,7 @@ class ComplexGaussian(nn.Module):
         """
 
         # modulus
-        adj = gaussian(sqdist(emb), self.sigma)
+        adj = gaussian(self.sqdist(emb), self.sigma)
         if not self.diag:
             adj = _delete_diag(adj)
         if self.norm:
@@ -195,12 +194,12 @@ class QCDDist(nn.Module):
         super(QCDDist, self).__init__()
         self.alpha = alpha
         self.radius = radius
-        self.sqdist = sqdist_periodic_ if periodic else sqdist_
+        self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
     def forward(self, emb):
         sqdist = self.sqdist(emb) / (self.radius ** 2)
         pow_momenta = (2 * self.alpha * emb[:, 4, :].log()).exp()
-        min_momenta = sym_min(pow_momenta)
+        min_momenta = ts.sym_min(pow_momenta)
         d_ij = sqdist * min_momenta
 
         return d_ij
@@ -214,12 +213,12 @@ class FixedQCDAware(nn.Module):
         self.alpha = alpha
         self.beta = beta
         self.epsilon = epsilon  # protection against division by 0
-        self.sqdist = sqdist_periodic_ if periodic else sqdist_
+        self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
     def forward(self, emb):
-        sqdist = sqdist_(emb)
+        sqdist = self.sqdist(emb)
         pow_momenta = (2 * self.alpha * emb[:, 4, :].log()).exp()
-        min_momenta = sym_min(pow_momenta)
+        min_momenta = ts.sym_min(pow_momenta)
         d_ij_alpha = sqdist * min_momenta
 
         d_min, _ = pow_momenta.min(1)
@@ -241,29 +240,48 @@ class QCDAware(nn.Module):
         beta = Parameter(beta * (torch.rand(1, 1, 1) * 0.02 + 0.99))
         self.register_parameter('alpha', alpha)
         self.register_parameter('beta', beta)
+        self.alpha.register_hook(ts.HookCheckForNan('NAN in backward alpha', action=print))
+        self.beta.register_hook(ts.HookCheckForNan('NAN in backward beta',
+                                                   action=print, args=self.beta))
 
+        self.init_momenta_stdev = None
         self.softmax = nn.Softmax()
-        self.sqdist = sqdist_periodic_ if periodic else sqdist_
+        self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
     def forward(self, emb):
-        check_for_nan(self.alpha, 'nan in kernel param : alpha')
-        check_for_nan(self.beta, 'nan in kernel param : beta')
+        ts.check_for_nan(self.alpha, 'nan in kernel param : alpha', )
+        ts.check_for_nan(self.beta, 'nan in kernel param : beta')
 
         sqdist = self.sqdist(emb)
-        momentum = emb[:, 4, :] + 1e-10
+        ts.check_for_inf(sqdist, 'inf in kernel : sqdist')
+        momentum = emb[:, 4, :]
+
+        if self.init_momenta_stdev is None:
+            var_m = (momentum ** 2).mean().unsqueeze(1)
+            self.init_momenta_stdev = var_m.sqrt()
+
+        momentum /= self.init_momenta_stdev.expand_as(momentum)
+        momentum += 1e-6
+
         alpha = self.alpha.expand_as(momentum)
         # alpha.register_hook(_hook_reduce_grad(100))
         pow_momenta = (2 * alpha * momentum.log()).exp()
-        min_momenta = sym_min(pow_momenta)
+        ts.check_for_nan(pow_momenta, 'NAN in kernel : pow_momenta')
+        min_momenta = ts.sym_min(pow_momenta)
+        min_momenta.register_hook(ts.HookCheckForNan('NAN in backward min_momenta', action=print))
         d_ij_alpha = sqdist * min_momenta
-        check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
+        d_ij_alpha.register_hook(ts.HookCheckForNan('NAN in backward d_ij_alpha', action=print))
+        ts.check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
 
         d_ij_center = _renorm(d_ij_alpha)
-        check_for_nan(d_ij_center, 'nan in kernel : d_ij_center')
+        d_ij_center.register_hook(ts.HookCheckForNan('NAN in backward d_ij_center', action=print))
+        ts.check_for_nan(d_ij_center, 'nan in kernel : d_ij_center')
         beta = (self.beta ** 2).expand_as(d_ij_center)
+        beta.register_hook(ts.HookCheckForNan('NAN in backward beta**2', action=print, args=('d_ij_center : {}'.format(d_ij_center),)))
         # beta.register_hook(_hook_reduce_grad(100))
         d_ij_norm = - beta * d_ij_center
-        check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
+        d_ij_norm.register_hook(ts.HookCheckForNan('NAN in backward d_ij_norm', action=print))
+        ts.check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
         w_ij = self._softmax(d_ij_norm)
         # w_ij = d_ij_norm.exp()
 
@@ -294,26 +312,26 @@ class QCDAwareNoNorm(nn.Module):
         self.register_parameter('alpha', alpha)
         self.register_parameter('beta', beta)
 
-        self.sqdist = sqdist_periodic_ if periodic else sqdist_
+        self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
         self.softmax = nn.Softmax()
 
     def forward(self, emb):
-        check_for_nan(self.alpha, 'nan in kernel param : alpha')
-        check_for_nan(self.beta, 'nan in kernel param : beta')
+        ts.check_for_nan(self.alpha, 'nan in kernel param : alpha')
+        ts.check_for_nan(self.beta, 'nan in kernel param : beta')
 
         sqdist = self.sqdist(emb)
         momentum = emb[:, 4, :] + 1e-10
         alpha = self.alpha.expand_as(momentum)
         # alpha.register_hook(_hook_reduce_grad(100))
         pow_momenta = (2 * alpha * momentum.log()).exp()
-        min_momenta = sym_min(pow_momenta)
+        min_momenta = ts.sym_min(pow_momenta)
         d_ij_alpha = sqdist * min_momenta
-        check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
+        ts.check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
 
         beta = (self.beta ** 2).expand_as(d_ij_alpha)
         # beta.register_hook(_hook_reduce_grad(100))
         d_ij_norm = - beta * d_ij_alpha
-        check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
+        ts.check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
         w_ij = self._softmax(d_ij_norm)
         # w_ij = d_ij_norm.exp()
 
@@ -345,15 +363,16 @@ class QCDAwareOld(nn.Module):
         self.register_parameter('alpha', alpha)
         self.register_parameter('beta', beta)
 
+        self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
         self.softmax = nn.Softmax()
 
     def forward(self, emb):
-        sqdist = sqdist_(emb)
+        sqdist = self.sqdist(emb)
         momentum = emb[:, 4, :]
         alpha = self.alpha.expand_as(momentum)
         # alpha.register_hook(_hook_reduce_grad(100))
         pow_momenta = (2 * alpha * momentum.log()).exp()
-        min_momenta = sym_min(pow_momenta)
+        min_momenta = ts.sym_min(pow_momenta)
         d_ij_alpha = sqdist * min_momenta
 
         d_ij_center = _renorm(d_ij_alpha)
