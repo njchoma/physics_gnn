@@ -48,7 +48,7 @@ def _renorm(bmatrix):
     bmat_min, _ = bmat_min.min(2)
     ts.check_for_nan(bmat_min, 'nan in _renorm : bmat_min')
     bmat_min_x = bmat_min.expand_as(bmatrix)
-    zero_div_protec = ((bmat_min == 0).detach().type_as(bmatrix) * 1e-9).expand_as(bmatrix)
+    zero_div_protec = ((bmat_min < 1e-6).detach().type_as(bmatrix) * 1e-6).expand_as(bmatrix)
     bmat_center = (bmat_nodiag - bmat_min_x) / (bmat_min_x + zero_div_protec)
 
     ts.check_for_nan(bmat_center, 'NAN in _renorm : bmat_center')
@@ -261,7 +261,6 @@ class QCDAware(nn.Module):
             self.init_momenta_stdev = var_m.sqrt()
 
         momentum /= self.init_momenta_stdev.expand_as(momentum)
-        momentum += 1e-6
 
         alpha = self.alpha.expand_as(momentum)
         # alpha.register_hook(_hook_reduce_grad(100))

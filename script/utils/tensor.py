@@ -136,7 +136,7 @@ def check_for_inf(tensor, error_message, raise_error=True, action=None, args=Non
         if action is not None:
             action(*args)
         if raise_error:
-            raise ValueError('NAN value in network')
+            raise ValueError('INF value in network')
 
 
 class HookCheckForNan:
