@@ -276,7 +276,8 @@ class QCDAware(nn.Module):
         d_ij_center.register_hook(ts.HookCheckForNan('NAN in backward d_ij_center', action=print))
         ts.check_for_nan(d_ij_center, 'nan in kernel : d_ij_center')
         beta = (self.beta ** 2).expand_as(d_ij_center)
-        beta.register_hook(ts.HookCheckForNan('NAN in backward beta**2', action=print, args=('d_ij_center : {}'.format(d_ij_center),)))
+        beta.register_hook(ts.HookCheckForNan(
+            'NAN in backward beta**2', action=print, args=('d_ij_center : {}'.format(d_ij_center),)))
         # beta.register_hook(_hook_reduce_grad(100))
         d_ij_norm = - beta * d_ij_center
         d_ij_norm.register_hook(ts.HookCheckForNan('NAN in backward d_ij_norm', action=print))
@@ -288,48 +289,64 @@ class QCDAware(nn.Module):
 
     def _softmax(self, dij):
         batch = dij.size()[0]
-        
+
         dij = torch.unbind(dij, dim=0)
         dij = torch.cat(dij, dim=0)
-        
+
         dij = self.softmax(dij)
-        
+
         dij = torch.chunk(dij, batch, dim=0)
         dij = torch.stack(dij, dim=0)
-        
+
         return dij
 
 
-class QCDAwareNoNorm(nn.Module):
+class QCDAwareMeanNorm(nn.Module):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, alpha, beta, periodic=False):
-        super(QCDAwareNoNorm, self).__init__()
+        super(QCDAwareMeanNorm, self).__init__()
 
         alpha = Parameter(alpha * (torch.rand(1, 1) * 0.02 + 0.99))
         beta = Parameter(beta * (torch.rand(1, 1, 1) * 0.02 + 0.99))
         self.register_parameter('alpha', alpha)
         self.register_parameter('beta', beta)
+        self.alpha.register_hook(ts.HookCheckForNan('NAN in backward alpha', action=print))
+        self.beta.register_hook(ts.HookCheckForNan('NAN in backward beta',
+                                                   action=print, args=self.beta))
 
-        self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
         self.softmax = nn.Softmax()
+        self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
     def forward(self, emb):
-        ts.check_for_nan(self.alpha, 'nan in kernel param : alpha')
+        ts.check_for_nan(self.alpha, 'nan in kernel param : alpha', )
         ts.check_for_nan(self.beta, 'nan in kernel param : beta')
 
         sqdist = self.sqdist(emb)
-        momentum = emb[:, 4, :] + 1e-10
+        ts.check_for_inf(sqdist, 'inf in kernel : sqdist')
+        momentum = emb[:, 4, :]
+        mean_momentum = momentum.mean(1).expand_as(momentum)
+        momentum /= mean_momentum
+
         alpha = self.alpha.expand_as(momentum)
         # alpha.register_hook(_hook_reduce_grad(100))
         pow_momenta = (2 * alpha * momentum.log()).exp()
+        ts.check_for_nan(pow_momenta, 'NAN in kernel : pow_momenta')
         min_momenta = ts.sym_min(pow_momenta)
+        min_momenta.register_hook(ts.HookCheckForNan('NAN in backward min_momenta', action=print))
         d_ij_alpha = sqdist * min_momenta
+        d_ij_alpha.register_hook(ts.HookCheckForNan('NAN in backward d_ij_alpha', action=print))
         ts.check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
 
-        beta = (self.beta ** 2).expand_as(d_ij_alpha)
+        d_ij_center = _renorm(d_ij_alpha)
+        d_ij_center.register_hook(ts.HookCheckForNan('NAN in backward d_ij_center', action=print))
+        ts.check_for_nan(d_ij_center, 'nan in kernel : d_ij_center')
+        beta = (self.beta ** 2).expand_as(d_ij_center)
+        beta.register_hook(ts.HookCheckForNan(
+            'NAN in backward beta**2', action=print, args=('d_ij_center : {}'.format(d_ij_center),)))
         # beta.register_hook(_hook_reduce_grad(100))
-        d_ij_norm = - beta * d_ij_alpha
+        d_ij_norm = - beta * d_ij_center
+        d_ij_norm.register_hook(ts.HookCheckForNan('NAN in backward d_ij_norm', action=print))
         ts.check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
         w_ij = self._softmax(d_ij_norm)
         # w_ij = d_ij_norm.exp()
@@ -338,15 +355,15 @@ class QCDAwareNoNorm(nn.Module):
 
     def _softmax(self, dij):
         batch = dij.size()[0]
-        
+
         dij = torch.unbind(dij, dim=0)
         dij = torch.cat(dij, dim=0)
-        
+
         dij = self.softmax(dij)
-        
+
         dij = torch.chunk(dij, batch, dim=0)
         dij = torch.stack(dij, dim=0)
-        
+
         return dij
 
 

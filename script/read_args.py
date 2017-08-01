@@ -89,7 +89,7 @@ def init_network(args, frst_fm):
 
     loop2pi = args.data == 'NERSC'  # in NERSC data, phi is 2pi-periodic
 
-    if args.kernel in ['FCG', 'FCG_nodiag', 'FCG_norm', 'FCG_nodiag_norm', 'FQCDAware', 'QCDAware', 'QCDAwareNoNorm']:
+    if args.kernel in ['FCG', 'FCG_nodiag', 'FCG_norm', 'FCG_nodiag_norm', 'FQCDAware', 'QCDAware', 'QCDAwareMeanNorm']:
         if args.kernel == 'FCG':
             kernel = ker.FixedComplexGaussian(args.sigma, periodic=loop2pi)
         elif args.kernel == 'FCG_nodiag':
@@ -102,8 +102,8 @@ def init_network(args, frst_fm):
             kernel = ker.FixedQCDAware(0.5, 0.1, periodic=loop2pi)
         elif args.kernel == 'QCDAware':
             kernel = ker.QCDAware(1., 0.7, periodic=loop2pi)
-        elif args.kernel == 'QCDAwareNoNorm':
-            kernel = ker.QCDAwareNoNorm(1., 0.7, periodic=loop2pi)
+        elif args.kernel == 'QCDAwareMeanNorm':
+            kernel = ker.QCDAwareMeanNorm(1., 0.7, periodic=loop2pi)
 
         return gcnn.GCNNSingleKernel(
             kernel, frst_fm, args.nb_feature_maps, args.nb_layer
