@@ -340,7 +340,7 @@ class QCDAwareMeanNorm(nn.Module):
 
         beta = (self.beta ** 2).expand_as(d_ij_alpha)
         beta.register_hook(ts.HookCheckForNan(
-            'NAN in backward beta**2', action=print, args=('d_ij_center : {}'.format(d_ij_center),)))
+            'NAN in backward beta**2', action=print, args=('d_ij_center : {}'.format(d_ij_alpha),)))
         # beta.register_hook(_hook_reduce_grad(100))
         d_ij_norm = - beta * d_ij_alpha
         d_ij_norm.register_hook(ts.HookCheckForNan('NAN in backward d_ij_norm', action=print))
