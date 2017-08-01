@@ -338,13 +338,11 @@ class QCDAwareMeanNorm(nn.Module):
         d_ij_alpha.register_hook(ts.HookCheckForNan('NAN in backward d_ij_alpha', action=print))
         ts.check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
 
-        d_ij_center.register_hook(ts.HookCheckForNan('NAN in backward d_ij_center', action=print))
-        ts.check_for_nan(d_ij_center, 'nan in kernel : d_ij_center')
-        beta = (self.beta ** 2).expand_as(d_ij_center)
+        beta = (self.beta ** 2).expand_as(d_ij_alpha)
         beta.register_hook(ts.HookCheckForNan(
             'NAN in backward beta**2', action=print, args=('d_ij_center : {}'.format(d_ij_center),)))
         # beta.register_hook(_hook_reduce_grad(100))
-        d_ij_norm = - beta * d_ij_center
+        d_ij_norm = - beta * d_ij_alpha
         d_ij_norm.register_hook(ts.HookCheckForNan('NAN in backward d_ij_norm', action=print))
         ts.check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
         w_ij = self._softmax(d_ij_norm)
