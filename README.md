@@ -42,7 +42,7 @@ Before training a network, create a link `dataNYU` or `dataNERSC` (depending on 
 
 ## Training a network
 
-To train a network, you simply need to launch `main.sh` after adding a command line defining the network you want to train, or use a single command calling `python script/main.py [arguments]`. Run `python script/main.py --help` to see a list of arguments.
+To train a network, you simply need to launch `main.sh` after uncommenting in it the line you want to use, or use a single command calling `python script/main.py [arguments]`. Run `python script/main.py --help` to see a list of arguments.
 
 The main arguments used to design a network are :
 * `--kernel str` : type of kernel / architecture used
