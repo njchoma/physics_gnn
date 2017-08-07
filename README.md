@@ -36,7 +36,7 @@ GCNN/
 
 ## Before training a network
 
-`main.sh` contains commented out command lines that launch training on models with different architecture. You can change parameters used to initialize networks, and more importantly you should add `--data NERSC` if you are not running on the default NYU data.
+`main.sh` contains commented out command lines that launch training on models with different architecture. You can change parameters used to initialize networks, and more importantly you should change `--data NYU` to `--data NERSC` if this is the data you want to use. You should also add `--cuda` if you want to train on GPU rather that CPU.
 
 Before training a network, create a link `dataNYU` or `dataNERSC` (depending on the data you want to train on) and run `main.sh` once, specifying the data you want to use : it will create the corresponding `param{}.txt` file and assume default paths. You can modify the path to fit a different organization of your local files. If your file system is the same as the default one, this will simply train on the architecture selected in `main.sh`. If not, it will crash so you can modify the `param{}.txt` file.
 
