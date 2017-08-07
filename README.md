@@ -19,11 +19,11 @@ GCNN/
     |	|-- projectNYU/        # code specific to training/testing on the NYU data
     |
     |-- paramNYU.txt    # file created when launching 'main.sh', contains paths to training and testing NYU data
-    |-- dataNYU     # link to a directory containing NYU data
+    |-- dataNYU     # link (or symbolic link) to a directory containing NYU data
     |	|-- train_uncropped.pickle
     |	|-- train_cropped.pickle
     |	|-- test_cropped.pickle
-    |-- dataNERSC   # link to a directory containing NERSC data
+    |-- dataNERSC   # link (or symbolic link) to a directory containing NERSC data
     |	|-- DelphesNevents
     |   |-- *01.h5  # testing set (multiple files)
     |   |-- *02.h5  # training set (multiple files)
