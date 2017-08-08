@@ -4,7 +4,7 @@
 # Uncomment a line to use it.
 
 # Network using a single kernel as described in "QCD-Aware Recursive Neural Networks for Jet Physics"
-python script/main.py --name test_QCDAwareMeanNorm --kernel QCDAwareMeanNorm --data NYU --fm 64 --depth 12 --nbtrain 1000000 --nbtest 1000000 --nbprint 20000 --lr 0.015 --lrdecay 0.9
+python script/main.py --name test_QCDAwareMeanNorm --kernel QCDAwareMeanNorm --data NYU --fm 64 --depth 12 --nbtrain 1000000 --nbtest 1000000 --nbprint 20000 --lr 0.001 --lrdecay 0.9
 
 # Other Networks
 # pass
