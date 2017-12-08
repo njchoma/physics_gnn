@@ -39,7 +39,7 @@ def sym_min(tensor):
 
         res = torch.stack((tens0, tens1), 3)
         res, _ = res.min(3)
-        res = res.squeeze(3)
+        res = res[:,:,0]#.squeeze(3)
         return res
 
     def _sym_min_edge_feature(tensor):
@@ -100,13 +100,13 @@ def spatialnorm(emb):
     """
 
     avg = emb.mean(2)
-    emb_centered = emb - avg.expand_as(emb)
+    emb_centered = emb - avg.unsqueeze(2).expand_as(emb)
 
     var = (emb_centered ** 2).mean(2)
     var_protect = (var == 0).type_as(var)
     if isinstance(var, Variable):
         var_protect = var_protect.detach()
-    emb_norm = emb_centered / (var.sqrt() + var_protect).expand_as(emb_centered)
+    emb_norm = emb_centered / (var.sqrt() + var_protect).unsqueeze(2).expand_as(emb_centered)
 
     return emb_norm, avg, var
 
@@ -145,7 +145,10 @@ class HookCheckForNan:
     """
 
     def __init__(self, error_message, raise_error=True, action=None, args=None):
-        super(HookCheckForNan, self).__init__()
+        try:
+           super(HookCheckForNan, self).__init__()
+        except:
+           print("line 151 in 'tensor.py'")
         self.error_message = error_message
         self.raise_error = raise_error
         self.action = action

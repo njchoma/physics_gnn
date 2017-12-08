@@ -17,6 +17,7 @@ def main_nyu(args, project_root_dir):
     make_dir_if_not_there(savedir)
 
     param = ra.get_fixed_param(args.data, project_root_dir)
+
     trainfile = param['trainfile']
     testtrainfile = param['testtrainfile']
     testfile = param['testfile']

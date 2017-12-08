@@ -18,6 +18,10 @@ def main_nersc(args, project_root_dir):
 
     datadir = path.join(project_root_dir, 'dataNERSC')
 
+    param = ra.get_fixed_param(args.data, project_root_dir)
+    print (param)
+    datadir = param['testfile']
+
     net = ra.make_net_if_not_there(args, frst_fm, savedir)
 
     if args.cuda:

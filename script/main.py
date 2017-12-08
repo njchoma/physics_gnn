@@ -9,6 +9,8 @@ def main():
 
     args = ra.read_args()
     project_root_dir = path.dirname(path.abspath(path.join(__file__, '..')))
+    print(project_root_dir)
+    print(args)
     if args.data == 'NYU':
         main_nyu(args, project_root_dir)
     elif args.data == 'NERSC':

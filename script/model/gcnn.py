@@ -43,8 +43,8 @@ class GCNNSingleKernel(nn.Module):
             emb = resgconv(operators, emb)
 
         # collapse graph into a single representation (uncomment for different options)
-        emb = emb.mean(2).squeeze(2)
-        # emb = emb.sum(2).squeeze(2)
+        emb = emb.mean(2)#.squeeze(2)
+        # emb = emb.sum(2)#.squeeze(2)
         # emb = emb.max(2)[0].squeeze(2)
         emb = self.instance_norm(emb.unsqueeze(1)).squeeze(1)
         check_for_nan(emb, 'nan coming from instance_norm')

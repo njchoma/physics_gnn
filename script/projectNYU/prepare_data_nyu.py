@@ -26,7 +26,9 @@ def get_weights(data, label):
     indices = np.searchsorted(edges, pts) - 1
     inv_w = 1. / pdf[indices]
     inv_w /= inv_w.sum()
+    print(inv_w.shape)
     weight[label == 1] = inv_w
+    print(weight.shape)
 
     return data, label, weight
 
@@ -66,6 +68,7 @@ def _transfer_one_event(filein, ev_name):
 
 def _transfer_one_file(pathin):
     filein = h5.File(pathin, 'r')
+    event_list = []
     event_list = [_transfer_one_event(filein, event) for event in filein]
     filein.close()
     data_list = [data for data, _ in event_list]
@@ -75,14 +78,14 @@ def _transfer_one_file(pathin):
 
 def main():
     pathin = '/data/grochette/data_nyu/antikt-kt-test.h5'
-    pathout = '/data/grochette/data_nyu/antikt-kt-test.pickle'
+    pathout = '/home/nc2201/research/GCNN/antikt-kt-test.pickle'
 
     data, label = _transfer_one_file(pathin)
     data, label, weight = get_weights(data, label)
     data = [x['data'] for x in data]
 
     with open(pathout, 'wb') as fileout:
-        pickle.dump((data, label, weight), fileout)
+        pickle.dump(output, fileout)
 
 if __name__ == '__main__':
     main()
