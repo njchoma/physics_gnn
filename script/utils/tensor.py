@@ -49,7 +49,7 @@ def sym_min(tensor):
         tens1 = tens0.transpose(2, 3).contiguous()
 
         res = torch.stack((tens0, tens1), 4)
-        res, _ = res.min(4)
+        res, _ = res.min(4, keepdim=True)
         res = res.squeeze(4)
         return res
 

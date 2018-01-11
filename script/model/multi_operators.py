@@ -18,7 +18,7 @@ def degree(adjs):
     dimension inserted in dim 1"""
 
     nb_node = adjs.size()[2]
-    deg = adjs.sum(2)
+    deg = adjs.sum(2,keepdim=True)
     deg = deg.expand_as(adjs)
 
     tensor_type = torch.cuda.FloatTensor if adjs.is_cuda else torch.FloatTensor

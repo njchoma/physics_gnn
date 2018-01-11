@@ -97,7 +97,7 @@ class GCNNLayerKernel(nn.Module):
             emb, _, _ = spatialnorm(emb)
             emb = resgconv(operators, emb)
 
-        emb = emb.mean(2).squeeze(2)
+        emb = emb.mean(2,keepdim=True).squeeze(2)
         emb = self.instance_norm_out(emb.unsqueeze(1)).squeeze(1)
 
         # logistic regression
@@ -150,7 +150,7 @@ class GCNNMultiKernel(nn.Module):
             operators = gc.join_operators(kernel, self.operators)
             emb = resgconv(operators, emb)
 
-        emb = emb.mean(2).squeeze(2).unsqueeze(1)
+        emb = emb.mean(2,keepdim=True).squeeze(2).unsqueeze(1)
         emb = self.instance_norm(emb).squeeze(1)
 
         # # logistic regression

@@ -67,8 +67,8 @@ class MultiQCDAware(nn.Module):
         # exclude diagonal from dmin definition
         val = d_ij_alpha.data.max()
         tens_nodiag = d_ij_alpha + val * eye
-        tens_min, _ = tens_nodiag.min(2)
-        dmin, _ = tens_min.min(3)
+        tens_min, _ = tens_nodiag.min(2,keepdim=True)
+        dmin, _ = tens_min.min(3,keepdim=True)
         zero_div_protec = ((dmin == 0).detach().type_as(d_ij_alpha) * 1e-9).expand_as(d_ij_alpha)
 
         # center d_ij_alpha
