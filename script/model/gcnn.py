@@ -13,7 +13,7 @@ class GCNNSingleKernel(nn.Module):
     logistic regression.
     """
 
-    def __init__(self, kernel, frst_fm, fmaps, nb_layer):
+    def __init__(self, kernel, adj_kernel, frst_fm, fmaps, nb_layer):
         super(GCNNSingleKernel, self).__init__()
 
         self.operators = [op.degree, op.adjacency]
@@ -21,6 +21,11 @@ class GCNNSingleKernel(nn.Module):
 
         self.kernel = kernel
         self.fst_gconv = gc.ResGOpConv(frst_fm, fmaps, self.nb_op)
+
+        self.adj_kernels = nn.ModuleList(
+            [adj_kernel(fmaps) for _ in range(nb_layer - 1)]
+        )
+
         self.resgconvs = nn.ModuleList(
             [gc.ResGOpConv(fmaps, fmaps, self.nb_op)
              for _ in range(nb_layer - 1)]
@@ -38,7 +43,11 @@ class GCNNSingleKernel(nn.Module):
 
         # apply Graph Convs
         emb = self.fst_gconv(operators, emb_in)
-        for resgconv in self.resgconvs:
+        for i, resgconv in enumerate(self.resgconvs):
+            # Apply message passing to adjacency matrix
+            adj = self.adj_kernels[i](adj, emb)
+            operators = gc.join_operators(adj, self.operators)
+            # Apply graph convolution
             emb, _, _ = spatialnorm(emb)
             emb = resgconv(operators, emb)
 

@@ -3,6 +3,7 @@ from os.path import exists, join
 import pickle
 from model import kernel as ker
 from model import multi_kernel as mker
+from model import adj_kernel as adj_ker
 from model import gcnn
 from utils.in_out import print_
 
@@ -35,6 +36,7 @@ def read_args():
     add_arg('--lr', dest='lrate', help='learning rate', type=float)
     add_arg('--lrdecay', dest='lrdecay', help='learning rate decay, `lr *= lrdecay` each epoch',
             type=float, default=0.95)
+    add_arg('--adj_kernel', dest='adj_kernel', help='name of kernel for updating adjacency matrix',default='Identity')
 
     args = parser.parse_args()
     return args
@@ -107,9 +109,19 @@ def init_network(args, frst_fm):
             kernel = ker.QCDAwareMeanNorm(1., 0.7, periodic=loop2pi)
         elif args.kernel == 'QCDAwareNoNorm':
             kernel = ker.QCDAwareNoNorm(1., 0.7, periodic=loop2pi)
+        
+        if args.adj_kernel == 'Gaussian':
+            adj_kernel = adj_ker.Gaussian
+        elif args.adj_kernel == 'DirectedGaussian':
+            adj_kernel = adj_ker.DirectedGaussian
+        elif args.adj_kernel == 'MPNNdirected':
+            adj_kernel = adj_ker.MPNNdirected
+        else:
+            adj_kernel = adj_ker.Identity
+
 
         return gcnn.GCNNSingleKernel(
-            kernel, frst_fm, args.nb_feature_maps, args.nb_layer
+            kernel, adj_kernel, frst_fm, args.nb_feature_maps, args.nb_layer
             )
 
     elif args.kernel == 'LayerQCDAware':
