@@ -116,6 +116,8 @@ def init_network(args, frst_fm):
             adj_kernel = adj_ker.DirectedGaussian
         elif args.adj_kernel == 'MPNNdirected':
             adj_kernel = adj_ker.MPNNdirected
+        elif args.adj_kernel == 'MLPdirected':
+            adj_kernel = adj_ker.MLPdirected
         else:
             adj_kernel = adj_ker.Identity
 

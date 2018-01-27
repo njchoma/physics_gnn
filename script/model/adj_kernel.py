@@ -93,4 +93,57 @@ class MPNNdirected(nn.Module):
       adj = functional.sigmoid(adj)
       return adj
 
+class MLPdirected(nn.Module):
+   def __init__(self,fmaps,nb_hidden=8):
+      super(MLPdirected, self).__init__()
+      self.fmaps = fmaps
+      self.layer1 = nn.Linear(2*fmaps+1, nb_hidden)
+      self.layer2 = nn.Linear(nb_hidden,8)
+
+   def forward(self, adj_in, emb_in):
+      batch, fmap, nb_node = emb_in.size()
+
+      if adj_in.is_cuda:
+         adj = torch.cuda.FloatTensor(batch,nb_node,nb_node).zero_()
+         net_input = torch.cuda.FloatTensor(nb_node*nb_node,2*fmap+1).zero_()
+      else:
+         adj = torch.FloatTensor(batch,nb_node,nb_node).zero_()
+         net_input = torch.cuda.FloatTensor(nb_node*nb_node,2*fmap+1).zero_()
+
+      adj = Variable(adj)
+      net_input = Variable(net_input)
+      # Define an adjacency matrix for every
+      # sample in the batch
+      for i in range(batch):
+        # Calculate sum weights
+        # to be used as input of MLP
+        sum_weights = adj_in.sum(dim=1)
+        self_edges = adj_in[i].diag().unsqueeze(0)
+        sum_weights -= self_edges
+        # Normalize
+        sum_weights /= adj_in.size()[1]-1
+        sum_weights = sum_weights.squeeze()
+        # Create samples from emb_in s.t. an MLP will create
+        # edges for every j,k node pair
+        sample = emb_in[i]
+        for j in range(nb_node):
+          idx = j*nb_node
+          # Put net inputs to correct shape
+          fst_sample = sample[:,j].expand(nb_node,fmap)
+          sec_sample = sample.transpose(0,1)
+          incoming_edge_weight = sum_weights
+          # Place net inputs into input tensor
+          net_input[idx:idx+nb_node,:fmap] = fst_sample
+          net_input[idx:idx+nb_node,fmap:2*fmap] = sec_sample
+          net_input[idx:idx+nb_node,2*fmap] = incoming_edge_weight
+        # MLP is applied to every j,k vertex pair
+        # to calculate new j,k edge weights
+        edge_out = self.layer1(net_input)
+        edge_out = functional.relu(edge_out)
+        edge_out = self.layer2(edge_out)
+        # Copy output of MLP into adj matrix
+        # for every j,k pair
+        for j in range(nb_node):
+          adj[i,j] = edge_out[j*nb_node:nb_node*(j+1),0]
+      return adj
 
