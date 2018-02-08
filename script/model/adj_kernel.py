@@ -137,15 +137,7 @@ class MLPdirected(nn.Module):
    def forward(self, adj_in, emb_in):
       batch, fmap, nb_node = emb_in.size()
 
-      if adj_in.is_cuda:
-         adj = torch.cuda.FloatTensor(batch,nb_node,nb_node).zero_()
-         net_input = torch.cuda.FloatTensor(nb_node*nb_node,2*fmap+1).zero_()
-      else:
-         adj = torch.FloatTensor(batch,nb_node,nb_node).zero_()
-         net_input = torch.cuda.FloatTensor(nb_node*nb_node,2*fmap+1).zero_()
-
-      adj = Variable(adj)
-      net_input = Variable(net_input)
+      adj_list = []
       # Define an adjacency matrix for every
       # sample in the batch
       for i in range(batch):
@@ -160,17 +152,18 @@ class MLPdirected(nn.Module):
         # Create samples from emb_in s.t. an MLP will create
         # edges for every j,k node pair
         sample = cartesian(emb_in[i].transpose(0,1))
-        net_input[:,:-1] = sample
-        net_input[:,-1]  = sum_weights.repeat(nb_node)
+        sum_weights = sum_weights.resize(nb_node,1).repeat(nb_node,1)
+        sample = torch.cat((sample, sum_weights),1)
         # MLP is applied to every j,k vertex pair
         # to calculate new j,k edge weights
-        edge_out = self.layer1(net_input)
+        edge_out = self.layer1(sample)
         edge_out = functional.relu(edge_out)
         edge_out = self.layer2(edge_out)
         # Copy output of MLP into adj matrix
         # for every j,k pair
-        adj[i] = get_adj(edge_out, nb_node)
+        adj_list.append(get_adj(edge_out,nb_node).unsqueeze(0))
       # Apply sigmoid to normalize edge weights
+      adj = torch.cat(tuple(adj_list),0)
       adj = functional.sigmoid(adj)
       return adj
 
