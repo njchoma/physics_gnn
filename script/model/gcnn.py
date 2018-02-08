@@ -16,8 +16,9 @@ class GCNNSingleKernel(nn.Module):
     def __init__(self, kernel, adj_kernel, frst_fm, fmaps, nb_layer):
         super(GCNNSingleKernel, self).__init__()
 
+        # self.operators = [op.degree, op.adjacency, op.adjacency_transpose]
         self.operators = [op.degree, op.adjacency]
-        self.nb_op = 2
+        self.nb_op = len(self.operators)
 
         self.kernel = kernel
         self.fst_gconv = gc.ResGOpConv(frst_fm, fmaps, self.nb_op)

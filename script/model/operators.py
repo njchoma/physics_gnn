@@ -12,6 +12,10 @@ def adjacency(adj):
         return torch.cat(adj, 2)
     return adj
 
+def adjacency_transpose(adj):
+    """transposed adjacency matrix.
+    """
+    return adj.transpose(1,2)
 
 def identity(adj):
     """Identity matrix"""

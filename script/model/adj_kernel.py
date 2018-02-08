@@ -93,12 +93,46 @@ class MPNNdirected(nn.Module):
       adj = functional.sigmoid(adj)
       return adj
 
+def cartesian(tensor):
+  '''
+  Computes cartesian product.
+  If tensor is:
+  [[0 1 2],
+   [3 4 5]]
+  Then a = [[0 1 2],   and b = [[0 1 2],
+            [0 1 2],            [3,4,5],
+            [3,4,5],            [0 1 2],
+            [3 4 5]]            [3 4 5]]
+  and output is
+  [[0 1 2 0 1 2],
+   [0 1 2 3 4 5],
+   [3 4 5 0 1 2],
+   [3 4 5 3 4 5]]
+  '''
+  n_repeats, dim2 = tensor.size()[0:2]
+  a = tensor.repeat(1,n_repeats)
+  a = a.resize(n_repeats*n_repeats,dim2)
+  b = tensor.repeat(n_repeats,1)
+  return torch.cat((a,b),1)
+
+def get_adj(tensor,adj_size):
+  '''
+  If tensor is 4x1 tensor
+  [[11], [12], [21], [22]]
+  returns 2x2 tensor
+  [[11 12],
+   [21 22]]
+  '''
+  return tensor.resize(adj_size, adj_size)
+
+
+
 class MLPdirected(nn.Module):
    def __init__(self,fmaps,nb_hidden=8):
       super(MLPdirected, self).__init__()
       self.fmaps = fmaps
       self.layer1 = nn.Linear(2*fmaps+1, nb_hidden)
-      self.layer2 = nn.Linear(nb_hidden,8)
+      self.layer2 = nn.Linear(nb_hidden,1)
 
    def forward(self, adj_in, emb_in):
       batch, fmap, nb_node = emb_in.size()
@@ -125,17 +159,9 @@ class MLPdirected(nn.Module):
         sum_weights = sum_weights.squeeze()
         # Create samples from emb_in s.t. an MLP will create
         # edges for every j,k node pair
-        sample = emb_in[i]
-        for j in range(nb_node):
-          idx = j*nb_node
-          # Put net inputs to correct shape
-          fst_sample = sample[:,j].expand(nb_node,fmap)
-          sec_sample = sample.transpose(0,1)
-          incoming_edge_weight = sum_weights
-          # Place net inputs into input tensor
-          net_input[idx:idx+nb_node,:fmap] = fst_sample
-          net_input[idx:idx+nb_node,fmap:2*fmap] = sec_sample
-          net_input[idx:idx+nb_node,2*fmap] = incoming_edge_weight
+        sample = cartesian(emb_in[i].transpose(0,1))
+        net_input[:,:-1] = sample
+        net_input[:,-1]  = sum_weights.repeat(nb_node)
         # MLP is applied to every j,k vertex pair
         # to calculate new j,k edge weights
         edge_out = self.layer1(net_input)
@@ -143,7 +169,8 @@ class MLPdirected(nn.Module):
         edge_out = self.layer2(edge_out)
         # Copy output of MLP into adj matrix
         # for every j,k pair
-        for j in range(nb_node):
-          adj[i,j] = edge_out[j*nb_node:nb_node*(j+1),0]
+        adj[i] = get_adj(edge_out, nb_node)
+      # Apply sigmoid to normalize edge weights
+      adj = functional.sigmoid(adj)
       return adj
 
