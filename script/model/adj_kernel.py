@@ -5,7 +5,13 @@ import torch.nn.functional as functional
 from torch.autograd import Variable
 from torch.nn import Parameter
 
-class Identity(nn.Module):
+# Abstract adjacency kernel class
+class Adj_Kernel(nn.Module):
+  def __init__(self):
+    super(Adj_Kernel,self).__init__()
+
+
+class Identity(Adj_Kernel):
 
    def __init__(self,fmaps):
       super(Identity, self).__init__()
@@ -13,7 +19,7 @@ class Identity(nn.Module):
    def forward(self, adj_in, emb_in):
       return adj_in
 
-class Gaussian(nn.Module):
+class Gaussian(Adj_Kernel):
    def __init__(self,fmaps,sigma=2.0):
       super(Gaussian, self).__init__()
       self.sigma = sigma
@@ -33,7 +39,7 @@ class Gaussian(nn.Module):
       adj = torch.exp(-adj.div(self.sigma))
       return adj
 
-class DirectedGaussian(nn.Module):
+class DirectedGaussian(Adj_Kernel):
    def __init__(self,fmaps,theta=0.67,sigma=1):
       super(DirectedGaussian, self).__init__()
       self.gauss_ker = Gaussian(sigma)
@@ -57,7 +63,7 @@ class DirectedGaussian(nn.Module):
 
       return adj
 
-class MPNNdirected(nn.Module):
+class MPNNdirected(Adj_Kernel):
    # Inspired by AdjacencyMatrix in Neural Message Passing for Jet Physics
    def __init__(self,fmaps):
       super(MPNNdirected, self).__init__()
@@ -127,7 +133,7 @@ def get_adj(tensor,adj_size):
 
 
 
-class MLPdirected(nn.Module):
+class MLPdirected(Adj_Kernel):
    def __init__(self,fmaps,nb_hidden=8):
       super(MLPdirected, self).__init__()
       self.fmaps = fmaps

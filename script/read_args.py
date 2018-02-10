@@ -110,6 +110,7 @@ def init_network(args, frst_fm):
         elif args.kernel == 'QCDAwareNoNorm':
             kernel = ker.QCDAwareNoNorm(1., 0.7, periodic=loop2pi)
         
+        adj_kernel_args = (args.nb_feature_maps,)
         if args.adj_kernel == 'Gaussian':
             adj_kernel = adj_ker.Gaussian
         elif args.adj_kernel == 'DirectedGaussian':
@@ -121,9 +122,11 @@ def init_network(args, frst_fm):
         else:
             adj_kernel = adj_ker.Identity
 
+        adj_kernels = [adj_kernel(*adj_kernel_args) for _ in range(args.nb_layer-1)]
+
 
         return gcnn.GCNNSingleKernel(
-            kernel, adj_kernel, frst_fm, args.nb_feature_maps, args.nb_layer
+            kernel, adj_kernels, frst_fm, args.nb_feature_maps, args.nb_layer
             )
 
     elif args.kernel == 'LayerQCDAware':

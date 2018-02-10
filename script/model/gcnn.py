@@ -13,7 +13,7 @@ class GCNNSingleKernel(nn.Module):
     logistic regression.
     """
 
-    def __init__(self, kernel, adj_kernel, frst_fm, fmaps, nb_layer):
+    def __init__(self, kernel, adj_kernels, frst_fm, fmaps, nb_layer):
         super(GCNNSingleKernel, self).__init__()
 
         # self.operators = [op.degree, op.adjacency, op.adjacency_transpose]
@@ -23,9 +23,7 @@ class GCNNSingleKernel(nn.Module):
         self.kernel = kernel
         self.fst_gconv = gc.ResGOpConv(frst_fm, fmaps, self.nb_op)
 
-        self.adj_kernels = nn.ModuleList(
-            [adj_kernel(fmaps) for _ in range(nb_layer - 1)]
-        )
+        self.adj_kernels = nn.ModuleList(adj_kernels)
 
         self.resgconvs = nn.ModuleList(
             [gc.ResGOpConv(fmaps, fmaps, self.nb_op)
