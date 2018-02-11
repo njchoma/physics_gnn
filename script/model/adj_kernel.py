@@ -1,4 +1,5 @@
 from __future__ import print_function
+from model import sparse
 import torch
 import torch.nn as nn
 import torch.nn.functional as functional
@@ -7,8 +8,20 @@ from torch.nn import Parameter
 
 # Abstract adjacency kernel class
 class Adj_Kernel(nn.Module):
-  def __init__(self):
+  def __init__(self,sparse_type='None',nb_sparse=10):
     super(Adj_Kernel,self).__init__()
+    self.sparse_type = sparse_type
+    self.nb_sparse   = nb_sparse
+    self._set_sparse()
+
+  def _set_sparse(self):
+    if self.sparse_type == 'knn':
+      self.sparse = sparse.KNN(self.nb_sparse)
+    else:
+      if self.sparse_type != 'None':
+        print(self.sparse_type, "not recognized type of sparsity. Using None")
+      self.sparse = sparse.No_sparsity()
+
 
 
 class Identity(Adj_Kernel):
@@ -134,8 +147,8 @@ def get_adj(tensor,adj_size):
 
 
 class MLPdirected(Adj_Kernel):
-   def __init__(self,fmaps,nb_hidden=8):
-      super(MLPdirected, self).__init__()
+   def __init__(self,fmaps,nb_hidden,sparse,nb_sparse):
+      super(MLPdirected, self).__init__(sparse,nb_sparse)
       self.fmaps = fmaps
       self.layer1 = nn.Linear(2*fmaps+1, nb_hidden)
       self.layer2 = nn.Linear(nb_hidden,1)
@@ -157,17 +170,15 @@ class MLPdirected(Adj_Kernel):
         sum_weights = sum_weights.squeeze()
         # Create samples from emb_in s.t. an MLP will create
         # edges for every j,k node pair
-        sample = cartesian(emb_in[i].transpose(0,1))
-        sum_weights = sum_weights.resize(nb_node,1).repeat(nb_node,1)
-        sample = torch.cat((sample, sum_weights),1)
+        sample = self.sparse.make_samples(emb_in[i].transpose(0,1),sum_weights)
         # MLP is applied to every j,k vertex pair
         # to calculate new j,k edge weights
         edge_out = self.layer1(sample)
         edge_out = functional.relu(edge_out)
         edge_out = self.layer2(edge_out)
         # Copy output of MLP into adj matrix
-        # for every j,k pair
-        adj_list.append(get_adj(edge_out,nb_node).unsqueeze(0))
+        # for every j,k pair as previously defined in sparse class
+        adj_list.append(self.sparse.get_adj(edge_out).unsqueeze(0))
       # Apply sigmoid to normalize edge weights
       adj = torch.cat(tuple(adj_list),0)
       adj = functional.sigmoid(adj)

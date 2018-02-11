@@ -37,6 +37,9 @@ def read_args():
     add_arg('--lrdecay', dest='lrdecay', help='learning rate decay, `lr *= lrdecay` each epoch',
             type=float, default=0.95)
     add_arg('--adj_kernel', dest='adj_kernel', help='name of kernel for updating adjacency matrix',default='Identity')
+    add_arg('--sparse', dest='sparse', help='type of sparsity to use when updating adjacency matrix',type=str,default='None')
+    add_arg('--nb_sparse', dest='nb_sparse', help='number of non-zero edges associated with each node when updating adjacency matrix',type=int,default=10)
+    add_arg('--nb_MLPadj_hidden', dest='nb_MLPadj_hidden', help='number of hidden units associated with each adj_kernel layer when using MLP adj_kernel',type=int,default=8)
 
     args = parser.parse_args()
     return args
@@ -118,6 +121,9 @@ def init_network(args, frst_fm):
         elif args.adj_kernel == 'MPNNdirected':
             adj_kernel = adj_ker.MPNNdirected
         elif args.adj_kernel == 'MLPdirected':
+            adj_kernel_args += (args.nb_MLPadj_hidden,)
+            adj_kernel_args += (args.sparse,)
+            adj_kernel_args += (args.nb_sparse,)
             adj_kernel = adj_ker.MLPdirected
         else:
             adj_kernel = adj_ker.Identity
