@@ -1,6 +1,7 @@
 from sklearn.neighbors import NearestNeighbors
 import torch
 import torch.nn as nn
+import numpy as np
 from torch.autograd import Variable
 
 def cartesian(tensor):
@@ -64,15 +65,11 @@ class KNN(nn.Module):
     Assumes emb_in is size nb_nodes x fmap
     '''
     self.nb_node = emb_in.size()[0]
-    self.k = min(self.nb_node-1, self.nb_sparse)
+    self.k = min(self.nb_node, self.nb_sparse)
     self.neighbors.fit(emb_in.cpu().data.numpy())
-    try:
-      self.idx = torch.LongTensor(self.neighbors.kneighbors(return_distance=False))
-    except:
-      print (emb_in)
-      print(self.k,self.nb_node)
-      print("scikit failed in knn")
-      exit()
+    idx = self.neighbors.kneighbors(n_neighbors=self.k-1,return_distance=False)
+    idx = np.concatenate((idx,np.arange(self.nb_node,dtype=int).reshape(self.nb_node,1)),1)
+    self.idx = torch.LongTensor(idx)
     if emb_in.is_cuda:
       self.idx = self.idx.cuda()
     all_samples = []
