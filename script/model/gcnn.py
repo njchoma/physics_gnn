@@ -13,7 +13,7 @@ class GCNNSingleKernel(nn.Module):
     logistic regression.
     """
 
-    def __init__(self, kernel, adj_kernels, frst_fm, fmaps, nb_layer):
+    def __init__(self, kernel, adj_kernels, sparse, frst_fm, fmaps, nb_layer):
         super(GCNNSingleKernel, self).__init__()
 
         # self.operators = [op.degree, op.adjacency, op.adjacency_transpose]
@@ -23,6 +23,7 @@ class GCNNSingleKernel(nn.Module):
         self.kernel = kernel
         self.fst_gconv = gc.ResGOpConv(frst_fm, fmaps, self.nb_op)
 
+        self.sparse = sparse
         self.adj_kernels = nn.ModuleList(adj_kernels)
 
         self.resgconvs = nn.ModuleList(
@@ -40,11 +41,16 @@ class GCNNSingleKernel(nn.Module):
 
         operators = gc.join_operators(adj, self.operators)
 
-        # apply Graph Convs
+        # apply Graph Conv
         emb = self.fst_gconv(operators, emb_in)
+
+        # set sparsity
+        sparse_idx = self.sparse.get_indices(emb[0].transpose(0,1))
+
+        # Apply remaining Graph Convs
         for i, resgconv in enumerate(self.resgconvs):
             # Apply message passing to adjacency matrix
-            adj = self.adj_kernels[i](adj, emb)
+            adj = self.adj_kernels[i](adj, emb, sparse_idx)
             operators = gc.join_operators(adj, self.operators)
             # Apply graph convolution
             emb, _, _ = spatialnorm(emb)

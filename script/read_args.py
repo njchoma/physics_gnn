@@ -5,6 +5,7 @@ from model import kernel as ker
 from model import multi_kernel as mker
 from model import adj_kernel as adj_ker
 from model import gcnn
+from model import sparse
 from utils.in_out import print_
 
 
@@ -113,6 +114,17 @@ def init_network(args, frst_fm):
         elif args.kernel == 'QCDAwareNoNorm':
             kernel = ker.QCDAwareNoNorm(1., 0.7, periodic=loop2pi)
         
+        # Instantiate sparsity
+        sparse_args = ()
+        if args.sparse == 'knn':
+          sparse_args += (args.nb_sparse,)
+          sparse_type = sparse.KNN
+        else:
+          sparse_type = sparse.No_sparsity
+
+        sparse_instances = [sparse_type(*sparse_args) for _ in range(args.nb_layer)]
+
+        # Instantiate adjacency kernels
         adj_kernel_args = (args.nb_feature_maps,)
         if args.adj_kernel == 'Gaussian':
             adj_kernel = adj_ker.Gaussian
@@ -122,17 +134,16 @@ def init_network(args, frst_fm):
             adj_kernel = adj_ker.MPNNdirected
         elif args.adj_kernel == 'MLPdirected':
             adj_kernel_args += (args.nb_MLPadj_hidden,)
-            adj_kernel_args += (args.sparse,)
-            adj_kernel_args += (args.nb_sparse,)
             adj_kernel = adj_ker.MLPdirected
         else:
             adj_kernel = adj_ker.Identity
 
-        adj_kernels = [adj_kernel(*adj_kernel_args) for _ in range(args.nb_layer-1)]
+        adj_kernels = [adj_kernel(*adj_kernel_args,sparse=sparse_instances[i]) for i in range(args.nb_layer-1)]
+
 
 
         return gcnn.GCNNSingleKernel(
-            kernel, adj_kernels, frst_fm, args.nb_feature_maps, args.nb_layer
+            kernel, adj_kernels, sparse_instances[-1], frst_fm, args.nb_feature_maps, args.nb_layer
             )
 
     elif args.kernel == 'LayerQCDAware':

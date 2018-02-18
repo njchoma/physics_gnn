@@ -26,7 +26,7 @@ def cartesian(tensor):
   b = tensor.repeat(n_repeats,1)
   return torch.cat((a,b),1)
 
-def get_adj(tensor,adj_size):
+def _get_adj(tensor,adj_size):
   '''
   If tensor is 4x1 tensor
   [[11], [12], [21], [22]]
@@ -40,7 +40,10 @@ class No_sparsity(nn.Module):
   def __init__(self):
     super(No_sparsity,self).__init__()
 
-  def make_samples(self,emb_in,sum_weights):
+  def get_indices(self,emb_in):
+    return None
+
+  def make_samples(self,emb_in,sum_weights,idx):
     '''
     Assumes emb_in is of shape nb_nodes x fmap
     '''
@@ -51,7 +54,7 @@ class No_sparsity(nn.Module):
     return sample
 
   def get_adj(self,edges):
-    return get_adj(edges,self.nb_node)
+    return _get_adj(edges,self.nb_node)
     
 
 class KNN(nn.Module):
@@ -60,24 +63,33 @@ class KNN(nn.Module):
     self.nb_sparse = nb_sparse
     self.neighbors = NearestNeighbors(nb_sparse)
 
-  def make_samples(self,emb_in,sum_weights):
+  def get_indices(self,emb_in):
     '''
-    Assumes emb_in is size nb_nodes x fmap
+    Returns indices of nearest neighbors of emb_in
     '''
     self.nb_node = emb_in.size()[0]
     self.k = min(self.nb_node, self.nb_sparse)
     self.neighbors.fit(emb_in.cpu().data.numpy())
     idx = self.neighbors.kneighbors(n_neighbors=self.k-1,return_distance=False)
-    idx = np.concatenate((idx,np.arange(self.nb_node,dtype=int).reshape(self.nb_node,1)),1)
-    self.idx = torch.LongTensor(idx)
+    return idx
+
+  def make_samples(self,emb_in,sum_weights,idx_in):
+    '''
+    Assumes emb_in is size nb_nodes x fmap
+    '''
+    self.nb_node = emb_in.size()[0]
+    self.k = idx_in.shape[1]+1
+    idx = np.concatenate((idx_in,np.arange(self.nb_node,dtype=int).reshape(self.nb_node,1)),1)
+    idx = torch.LongTensor(idx)
     if emb_in.is_cuda:
-      self.idx = self.idx.cuda()
+      idx = idx.cuda()
+    self.idx = idx
     all_samples = []
     for i in range(self.nb_node):
       node = emb_in[i:i+1].repeat(self.k,1)
-      neighbors = emb_in[self.idx[i]]
+      neighbors = emb_in[idx[i]]
       sample = torch.cat((node,neighbors),1)
-      edge_wts = sum_weights[self.idx[i]].resize(self.k,1)
+      edge_wts = sum_weights[idx[i]].resize(self.k,1)
       sample = torch.cat((sample,edge_wts),1)
       all_samples.append(sample)
     all_samples = torch.cat(all_samples,0)

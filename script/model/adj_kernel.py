@@ -6,22 +6,24 @@ import torch.nn.functional as functional
 from torch.autograd import Variable
 from torch.nn import Parameter
 
+def get_summed_weights(adj_in):
+  # Assume adj_in is shape nb_node x nb_node
+  # Calculate sum weights
+  # to be used as input of MLP
+  sum_weights = adj_in.sum(dim=0)
+  self_edges = adj_in.diag()
+  sum_weights -= self_edges
+  # Normalize
+  sum_weights /= adj_in.size()[0]-1
+  sum_weights = sum_weights.squeeze()
+  return sum_weights
+  
+
 # Abstract adjacency kernel class
 class Adj_Kernel(nn.Module):
-  def __init__(self,sparse_type='None',nb_sparse=10):
+  def __init__(self,sparse=None):
     super(Adj_Kernel,self).__init__()
-    self.sparse_type = sparse_type
-    self.nb_sparse   = nb_sparse
-    self._set_sparse()
-
-  def _set_sparse(self):
-    if self.sparse_type == 'knn':
-      self.sparse = sparse.KNN(self.nb_sparse)
-    else:
-      if self.sparse_type != 'None':
-        print(self.sparse_type, "not recognized type of sparsity. Using None")
-      self.sparse = sparse.No_sparsity()
-
+    self.sparse = sparse
 
 
 class Identity(Adj_Kernel):
@@ -53,26 +55,25 @@ class Gaussian(Adj_Kernel):
       return adj
 
 class DirectedGaussian(Adj_Kernel):
-   def __init__(self,fmaps,theta=0.67,sigma=1):
+   def __init__(self,fmaps,theta=0.67,sigma=1,sparse=None):
       super(DirectedGaussian, self).__init__()
       self.gauss_ker = Gaussian(sigma)
       theta = torch.FloatTensor([theta])
       self.register_parameter('theta', Parameter(theta))
+      print("WARNING: Sparse not yet implemented for DirectedGaussian")
 
-   def forward(self, adj_in, emb_in):
+   def forward(self, adj_in, emb_in,idx):
       batch, fmap, nb_node = emb_in.size()
-      sum_weights = adj_in.sum(dim=1)
-      self_edges = adj_in[0].diag().unsqueeze(0)
-      sum_weights -= self_edges
-      # Normalize
-      sum_weights /= adj_in.size()[1]-1
+      sum_weights = []
+      for i in range(batch):
+        sum_weights.append(get_summed_weights(adj_in[0]).unsqueeze(0))
+      sum_weights = torch.cat(sum_weights,0)
       # Expand to match adj size
       sum_weights = sum_weights.expand(batch, nb_node, nb_node)
       # Transpose so row is uniform
       sum_weights = sum_weights.transpose(1,2)
       adj = self.gauss_ker(adj_in, emb_in)
       adj = self.theta*adj + (1-self.theta) * sum_weights
-      
 
       return adj
 
@@ -147,30 +148,23 @@ def get_adj(tensor,adj_size):
 
 
 class MLPdirected(Adj_Kernel):
-   def __init__(self,fmaps,nb_hidden,sparse,nb_sparse):
-      super(MLPdirected, self).__init__(sparse,nb_sparse)
+   def __init__(self,fmaps,nb_hidden,sparse):
+      super(MLPdirected, self).__init__(sparse)
       self.fmaps = fmaps
       self.layer1 = nn.Linear(2*fmaps+1, nb_hidden)
       self.layer2 = nn.Linear(nb_hidden,1)
 
-   def forward(self, adj_in, emb_in):
+   def forward(self, adj_in, emb_in, idx=None):
       batch, fmap, nb_node = emb_in.size()
 
       adj_list = []
       # Define an adjacency matrix for every
       # sample in the batch
       for i in range(batch):
-        # Calculate sum weights
-        # to be used as input of MLP
-        sum_weights = adj_in.sum(dim=1)
-        self_edges = adj_in[i].diag().unsqueeze(0)
-        sum_weights -= self_edges
-        # Normalize
-        sum_weights /= adj_in.size()[1]-1
-        sum_weights = sum_weights.squeeze()
         # Create samples from emb_in s.t. an MLP will create
         # edges for every j,k node pair
-        sample = self.sparse.make_samples(emb_in[i].transpose(0,1),sum_weights)
+        sum_weights = get_summed_weights(adj_in[i])
+        sample = self.sparse.make_samples(emb_in[i].transpose(0,1),sum_weights,idx)
         # MLP is applied to every j,k vertex pair
         # to calculate new j,k edge weights
         edge_out = self.layer1(sample)
