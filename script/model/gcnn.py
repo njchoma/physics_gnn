@@ -4,6 +4,7 @@ from torch.nn.functional import sigmoid
 from model import operators as op
 from model import multi_operators as ops
 from model import graphconv as gc
+from graphics.plot_graph import spectral_plot_graph
 from utils.tensor import spatialnorm, check_for_nan
 
 
@@ -33,11 +34,15 @@ class GCNNSingleKernel(nn.Module):
         self.instance_norm = nn.InstanceNorm1d(1)
         self.fcl = nn.Linear(fmaps, 1)
 
-    def forward(self, emb_in):
-
+    def forward(self, emb_in, mode='none'):
+        
         # initiate operator
         adj = self.kernel(emb_in)
         check_for_nan(adj, 'NAN in operators')
+
+        # Plot sample
+        if mode == 'plot':
+          spectral_plot_graph(emb_in.squeeze().t().data.numpy(), adj.squeeze().data.numpy(),0)
 
         operators = gc.join_operators(adj, self.operators)
 
@@ -52,6 +57,9 @@ class GCNNSingleKernel(nn.Module):
             # Apply message passing to adjacency matrix
             adj = self.adj_kernels[i](adj, emb, sparse_idx)
             operators = gc.join_operators(adj, self.operators)
+            # Plot updated representation
+            if mode == 'plot':
+              spectral_plot_graph(emb.squeeze().t().data.numpy(), adj.squeeze().data.numpy(),i+1)
             # Apply graph convolution
             emb, _, _ = spatialnorm(emb)
             emb = resgconv(operators, emb)

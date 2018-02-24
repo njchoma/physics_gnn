@@ -35,11 +35,11 @@ class Identity(Adj_Kernel):
       return adj_in
 
 class Gaussian(Adj_Kernel):
-   def __init__(self,fmaps,sigma=2.0):
+   def __init__(self,fmaps,sparse=None,sigma=2.0):
       super(Gaussian, self).__init__()
       self.sigma = sigma
 
-   def forward(self, adj_in, emb_in):
+   def forward(self, adj_in, emb_in,idx):
       batch, fmap, nb_node = emb_in.size()
       # Normalize input coordinates
       coord = emb_in.div(emb_in.std())
