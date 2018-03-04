@@ -42,7 +42,7 @@ class GCNNSingleKernel(nn.Module):
 
         # Plot sample
         if mode == 'plot':
-          spectral_plot_graph(emb_in.squeeze().t().data.numpy(), adj.squeeze().data.numpy(),0)
+          spectral_plot_graph(emb_in.cpu().squeeze().t().data.numpy(), adj.cpu().squeeze().data.numpy(),0)
 
         operators = gc.join_operators(adj, self.operators)
 
@@ -59,7 +59,7 @@ class GCNNSingleKernel(nn.Module):
             operators = gc.join_operators(adj, self.operators)
             # Plot updated representation
             if mode == 'plot':
-              spectral_plot_graph(emb.squeeze().t().data.numpy(), adj.squeeze().data.numpy(),i+1)
+              spectral_plot_graph(emb.squeeze().t().cpu().data.numpy(), adj.cpu().squeeze().data.numpy(),i+1)
             # Apply graph convolution
             emb, _, _ = spatialnorm(emb)
             emb = resgconv(operators, emb)
@@ -78,6 +78,10 @@ class GCNNSingleKernel(nn.Module):
 
         if (emb != emb).data.sum() > 0:
             print('WARNING : NAN')
+
+        if mode == 'plot':
+          print("All plotting successful. Exiting")
+          exit()
 
         return emb
 

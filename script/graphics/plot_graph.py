@@ -1,10 +1,12 @@
 import numpy as np
+import matplotlib
+matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
 import matplotlib.pyplot as plt
 
 def plot_nodes(nodes):
   n_pts = nodes.shape[0]
   plt.plot(nodes[:,0],nodes[:,1],'ro ')
-  plt.show()
+  # plt.show()
 
 def euclidean_plot(nodes, edges,layer_num):
   n_pts = nodes.shape[0]
@@ -21,7 +23,8 @@ def euclidean_plot(nodes, edges,layer_num):
     plt.plot(node_pairs[i, :,0],node_pairs[i, :,1],color=3*(1-edge_colors[i],))
   plt.plot(nodes[:,0],nodes[:,1],'ro ')
   plt.savefig("graph_{}.png".format(layer_num))
-  plt.show()
+  # plt.show()
+  plt.clf()
 
 def spectral_plot_graph(nodes, edges,layer_num):
   n_pts = nodes.shape[0]
@@ -31,5 +34,7 @@ def spectral_plot_graph(nodes, edges,layer_num):
   L = np.diag(D) - edges
   w,v = np.linalg.eigh(L)
 
-  spec_nodes = np.concatenate((v[:,1:2],v[:,2:3]),1)
+  fst_eigvec = 1
+  sec_eigvec = fst_eigvec+1
+  spec_nodes = np.concatenate((v[:,fst_eigvec:fst_eigvec+1],v[:,sec_eigvec:sec_eigvec+1]),1)
   euclidean_plot(spec_nodes,edges,layer_num)
