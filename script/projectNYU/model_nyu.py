@@ -26,7 +26,7 @@ def train_net(net, trainfile, criterion, optimizer, args):
             jet = jet.cuda()
 
         if i == 0:
-          out = net(jet,mode='plot')
+          out = net(jet)#,mode='plot')
         else:
           out = net(jet)
 

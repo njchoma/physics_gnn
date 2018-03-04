@@ -3,6 +3,7 @@ import pickle
 import torch
 import torch.nn as nn
 import read_args as ra
+from loading.model import build_model
 from projectNYU import model_nyu as model
 from utils.in_out import print_, make_dir_if_not_there
 
@@ -22,7 +23,7 @@ def main_nyu(args, project_root_dir):
     testtrainfile = param['testtrainfile']
     testfile = param['testfile']
 
-    net = ra.make_net_if_not_there(args, frst_fm, savedir)
+    net = build_model.make_net_if_not_there(args, frst_fm, savedir)
 
     if args.cuda:
         net = net.cuda()
