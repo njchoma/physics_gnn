@@ -1,13 +1,5 @@
 import argparse
 from os.path import exists, join
-# import pickle
-# from model import kernel as ker
-# from model import multi_kernel as mker
-# from model import adj_kernel as adj_ker
-# from model import gcnn
-# from model import sparse
-# from utils.in_out import print_
-
 
 def read_args():
     """Parses stdin for arguments used for training or network initialisation"""
