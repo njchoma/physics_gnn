@@ -28,10 +28,10 @@ class Adj_Kernel(nn.Module):
 
 class Identity(Adj_Kernel):
 
-   def __init__(self,fmaps):
+   def __init__(self,fmaps, **kwargs):
       super(Identity, self).__init__()
 
-   def forward(self, adj_in, emb_in):
+   def forward(self, adj_in, emb_in, sparse_idx):
       return adj_in
 
 class Gaussian(Adj_Kernel):
