@@ -1,11 +1,12 @@
-from os.path import exists, join
+import logging
 import pickle
+from os.path import exists, join
+
 from model import kernel as ker
 from model import multi_kernel as mker
 from model import adj_kernel as adj_ker
 from model import gcnn
 from model import sparse
-from utils.in_out import print_
 
 def init_network(args, frst_fm):
     """Reads args and initiates a network accordingly.
@@ -100,13 +101,13 @@ def make_net_if_not_there(args, frst_fm, savedir):
     if exists(model_path + '.pkl'):
         with open(model_path + '.pkl', 'rb') as filein:
             net = pickle.load(filein)
-        print_('Network recovered from previous training', args.quiet)
+        logging.warning('Network recovered from previous training')
     else:
         net = init_network(args, frst_fm)
-        print_('Network created', args.quiet)
+        logging.warning('Network created')
         with open(model_path + '.csv', 'w') as fileres:
             fileres.write('Learning Rate, Train Loss, Test Loss, Train AUC Score'
                           + ', Test AUC Score, 1/FPR_train, 1/FPR_test, Running Loss\n')
-    print_('parameters : {}'.format(sum([param.numel() for param in net.parameters()])), args.quiet)
+    logging.info('parameters : {}'.format(sum([param.numel() for param in net.parameters()])))
 
     return net

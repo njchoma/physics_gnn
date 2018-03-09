@@ -1,10 +1,11 @@
+import logging
 import torch
 import torch.nn as nn
 from torch.nn.functional import sigmoid
+
 from model import operators as op
 from model import multi_operators as ops
 from model import graphconv as gc
-from graphics.plot_graph import spectral_plot_graph
 from utils.tensor import spatialnorm, check_for_nan
 
 
@@ -34,15 +35,15 @@ class GCNNSingleKernel(nn.Module):
         self.instance_norm = nn.InstanceNorm1d(1)
         self.fcl = nn.Linear(fmaps, 1)
 
-    def forward(self, emb_in, mode='none'):
+    def forward(self, emb_in, plotting=None):
         
         # initiate operator
         adj = self.kernel(emb_in)
         check_for_nan(adj, 'NAN in operators')
 
         # Plot sample
-        if mode == 'plot':
-          spectral_plot_graph(emb_in.cpu().squeeze().t().data.numpy(), adj.cpu().squeeze().data.numpy(),0)
+        if plotting is not None:
+          plotting[0].plot_graph(emb_in.cpu().squeeze().t().data.numpy(), adj.cpu().squeeze().data.numpy(),0)
 
         operators = gc.join_operators(adj, self.operators)
 
@@ -58,8 +59,8 @@ class GCNNSingleKernel(nn.Module):
             adj = self.adj_kernels[i](adj, emb, sparse_idx)
             operators = gc.join_operators(adj, self.operators)
             # Plot updated representation
-            if mode == 'plot':
-              spectral_plot_graph(emb.squeeze().t().cpu().data.numpy(), adj.cpu().squeeze().data.numpy(),i+1)
+            if plotting is not None:
+              plotting[i+1].plot_graph(emb.cpu().squeeze().t().data.numpy(), adj.cpu().squeeze().data.numpy(),i+1)
             # Apply graph convolution
             emb, _, _ = spatialnorm(emb)
             emb = resgconv(operators, emb)
@@ -78,10 +79,6 @@ class GCNNSingleKernel(nn.Module):
 
         if (emb != emb).data.sum() > 0:
             print('WARNING : NAN')
-
-        if mode == 'plot':
-          print("All plotting successful. Exiting")
-          exit()
 
         return emb
 

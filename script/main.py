@@ -1,19 +1,31 @@
 import logging
 import os.path as path
 import read_args as ra
+
 from run_experiment import train_model
+from utils.in_out import make_dir_if_not_there
 
 
 def main():
     """Reads args, loads specified dataset, and trains model"""
 
     args = ra.read_args()
-    args.project_root_dir = path.dirname(path.abspath(path.join(__file__, '..')))
-    print(args.project_root_dir)
-    for arg in args:
-      logging.info(arg)
+
+    # Set up model directory
+    project_root_dir = path.dirname(path.abspath(path.join(__file__, '..')))
+    modelsdir = path.join(project_root_dir, 'models' + args.data)
+    args.savedir = path.join(modelsdir, args.name)
+    make_dir_if_not_there(args.savedir)
+
+    # Set up logging
+    if (args.quiet):
+      logging_level = logging.WARNING
+    else:
+      logging_level = logging.INFO
+    logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.DEBUG)
     
     # Dataset-specific operations
+    logging.info("Loading data...")
     if args.data == 'NYU':
         from loading.data.nyu.load_data import load_raw_data
         datadir = '/data/grochette/data_nyu/'

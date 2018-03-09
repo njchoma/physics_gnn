@@ -1,19 +1,23 @@
+import logging
 from os.path import exists
 import pickle
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+
 from graphics.roccurve import ROCCurve
-from utils.in_out import print_
+from graphics.plot_graph import construct_plot
 
 
 def train_net(net, X, y, w, criterion, optimizer, args):
     """Trains net for one epoch using criterion loss and optimizer"""
 
-    print_('training on {} events'.format(len(y)), args.quiet)
+    logging.warning('training on {} events'.format(len(y)))
     epoch_loss = 0
     step_loss = 0
     net.train()
+
+    plots = construct_plot(args)
 
     for i, ground_truth in enumerate(y):
         optimizer.zero_grad()
@@ -29,19 +33,22 @@ def train_net(net, X, y, w, criterion, optimizer, args):
         if i == 0:
           out = net(jet)#,mode='plot')
         else:
-          out = net(jet)
+          out = net(jet, plots)
 
         loss = criterion(out, ground_truth, weight)
         epoch_loss += loss.data[0]
         step_loss += loss.data[0]
 
         if (i + 1) % args.nbprint == 0:
-            print_('    {} : {}'.format(i + 1, step_loss / args.nbprint), args.quiet)
+            logging.info('    {} : {}'.format(i + 1, step_loss / args.nbprint))
             step_loss = 0
 
         loss.backward()
         optimizer.step()
     epoch_loss_avg = epoch_loss / len(y)
+    if plots is not None:
+      for i, plot in enumerate(plots):
+        plot.epoch_finished(i)
     return epoch_loss_avg
 
 
@@ -49,7 +56,7 @@ def test_net(net, X, y, w, criterion, args, savedir, type_):
     """Tests the network, returns the ROC AUC and epoch loss"""
 
     # criterion = nn.BCELoss()
-    print_('testing on {} events'.format(len(y)), args.quiet)
+    logging.warning('testing on {} events'.format(len(y)))
     epoch_loss = 0
     roccurve = ROCCurve()
     net.eval()
@@ -69,7 +76,7 @@ def test_net(net, X, y, w, criterion, args, savedir, type_):
         roccurve.update(out, ground_truth, weight)
 
         if (i + 1) % 5000 == 0:
-            print_('tested on {}'.format(i + 1), args.quiet)
+            logging.info('tested on {}'.format(i + 1))
 
     score = roccurve.roc_score(True)
     fpr50 = roccurve.plot_roc_curve(args.name, type_, savedir, zooms=[1., 0.001, 0.0001])

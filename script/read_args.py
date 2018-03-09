@@ -33,6 +33,7 @@ def read_args():
     add_arg('--sparse', dest='sparse', help='type of sparsity to use when updating adjacency matrix',type=str,default='None')
     add_arg('--nb_sparse', dest='nb_sparse', help='number of non-zero edges associated with each node when updating adjacency matrix',type=int,default=10)
     add_arg('--nb_MLPadj_hidden', dest='nb_MLPadj_hidden', help='number of hidden units associated with each adj_kernel layer when using MLP adj_kernel',type=int,default=8)
+    add_arg('--plot', dest='plot', help='type of plotting to perform',type=str,default=None)
 
     args = parser.parse_args()
     return args
