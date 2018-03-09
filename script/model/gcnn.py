@@ -43,7 +43,7 @@ class GCNNSingleKernel(nn.Module):
 
         # Plot sample
         if plotting is not None:
-          plotting[0].plot_graph(emb_in.cpu().squeeze().t().data.numpy(), adj.cpu().squeeze().data.numpy(),0)
+          plotting.plot_graph(emb_in.cpu().squeeze().t().data.numpy(), adj.cpu().squeeze().data.numpy(),0)
 
         operators = gc.join_operators(adj, self.operators)
 
@@ -60,7 +60,7 @@ class GCNNSingleKernel(nn.Module):
             operators = gc.join_operators(adj, self.operators)
             # Plot updated representation
             if plotting is not None:
-              plotting[i+1].plot_graph(emb.cpu().squeeze().t().data.numpy(), adj.cpu().squeeze().data.numpy(),i+1)
+              plotting.plot_graph(emb.cpu().squeeze().t().data.numpy(), adj.cpu().squeeze().data.numpy(),i+1)
             # Apply graph convolution
             emb, _, _ = spatialnorm(emb)
             emb = resgconv(operators, emb)

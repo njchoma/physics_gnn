@@ -30,10 +30,7 @@ def train_net(net, X, y, w, criterion, optimizer, args):
             jet = jet.cuda()
             weight = weight.cuda()
 
-        if i == 0:
-          out = net(jet)#,mode='plot')
-        else:
-          out = net(jet, plots)
+        out = net(jet, plots)
 
         loss = criterion(out, ground_truth, weight)
         epoch_loss += loss.data[0]
@@ -47,8 +44,7 @@ def train_net(net, X, y, w, criterion, optimizer, args):
         optimizer.step()
     epoch_loss_avg = epoch_loss / len(y)
     if plots is not None:
-      for i, plot in enumerate(plots):
-        plot.epoch_finished(i)
+      plots.epoch_finished()
     return epoch_loss_avg
 
 
