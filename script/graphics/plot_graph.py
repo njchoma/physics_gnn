@@ -1,29 +1,39 @@
+import time
 import os
 import logging
 import numpy as np
-import matplotlib
-matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
-import matplotlib.pyplot as plt
 from scipy.sparse import csgraph
 import scipy.misc
 
+import matplotlib
+matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
+import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
+
 from utils.in_out import make_dir_if_not_there
+import graphics.graph_utils as graph_utils
 
 def construct_plot(args):
+  if args.plot == None:
+    return None
   logging.info("Building plotter...")
+  opto_args = {}
   if args.plot == 'spectral':
     plot_class = Spectral_Plot
+  elif args.plot == 'spectral3d':
+    plot_class = Spectral_Plot
+    opto_args['dim'] = 3
   elif args.plot == 'eig':
     plot_class = Eig_Plot
   elif args.plot == 'ker':
     plot_class = Visualize_Kernel
-  elif args.plot == None:
-    logging.info("No plotting selected")
-    return None
   else:
     raise ValueError("{} plot type not recognized".format(args.plot))
   logging.info("{} plotting to be performed".format(args.plot))
-  return plot_class(args)
+  return plot_class(args,**opto_args)
+
 
 class Plot(object):
   def __init__(self, args, **kwargs):
@@ -34,56 +44,85 @@ class Plot(object):
 
   def _savefig(self, name):
     fileout = os.path.join(self.plot_dir, name)
-    plt.savefig(fileout)
+    plt.savefig(fileout, dpi=200)
     plt.clf()
 
   def epoch_finished(self):
     logging.warning("Plotting complete. Exiting.")
     exit()
     
+
 class Spectral_Plot(Plot):
-  def __init__(self, args, **kwargs):
+  def __init__(self, args, dim=2, **kwargs):
     super(Spectral_Plot, self).__init__(args)
+    self.dim = dim
 
-  def _plot_nodes(self, nodes):
+  def _euclidean_plot(self, nodes, edges, layer_num):
     n_pts = nodes.shape[0]
-    plt.plot(nodes[:,0],nodes[:,1],'ro ')
+    edge_weights = edges.flatten()
+    # Normalize edge weights
+    edge_weights = graph_utils.normalize_edges(edge_weights)
+    # Get cartesian product of edges between all node pairs
+    edges = graph_utils.cartesian(np.arange(n_pts).reshape(-1,1))
+    # Sort edges from lightest to darkest
+    # This allows darker lines to be plotted over lighter ones
+    plot_order = np.argsort(edge_weights)
+    edges = edges[plot_order]
+    edge_weights = edge_weights[plot_order]
 
-  def _euclidean_plot(self, nodes, edges,layer_num):
-    n_pts = nodes.shape[0]
-    norm_edges = (edges-edges.min())/(edges.max()-edges.min())
-    edge_colors = np.zeros(shape=n_pts*n_pts)
-    node_pairs  = np.zeros(shape=(n_pts*n_pts,2,2))
-    for i in range(n_pts):
-      for j in range(n_pts):
-        edge_colors[i*n_pts+j] = min(norm_edges[i,j],1.0)
-        node_pairs[ i*n_pts+j] = nodes[[i,j]]
-    # sort edges from lightest to darkest
-    plot_order = np.argsort(edge_colors)
-    for i in plot_order:
-      plt.plot(node_pairs[i, :,0],node_pairs[i, :,1],color=3*(1-edge_colors[i],))
-    plt.plot(nodes[:,0],nodes[:,1],'ro ')
+    # Ensure white edges don't block gridlines
+    edge_weights, edges = graph_utils.remove_white_edges(edge_weights, edges)
+
+    # Set edge colors
+    colors = [3*(1-wt,) for wt in edge_weights]
+
+    # Perform all plotting
+    if self.dim == 2:
+      LineColl = LineCollection
+    else:
+      LineColl = Line3DCollection
+    lc = LineColl(nodes[edges], colors=colors)
+    fig = plt.figure()
+    node_cmap = np.sum(nodes,axis=1)
+    if self.dim == 2:
+      ax = plt.gca()
+      ax.add_collection(lc)
+      ax.plot(nodes[:,0],nodes[:,1], 'ro')
+    else:
+      ax = plt.gca(projection='3d')
+      ax.add_collection3d(lc)
+      ax.scatter3D(nodes[:,0],nodes[:,1], nodes[:,2],c=node_cmap, cmap='autumn')
+      ax.set_xlim([nodes[:,0].min(),nodes[:,0].max()])
+      ax.set_ylim([nodes[:,1].min(),nodes[:,1].max()])
+      ax.set_zlim([nodes[:,2].min(),nodes[:,2].max()])
     plt.title("Spectral embedding, layer {}".format(layer_num))
-    self._savefig("spectral_{}.png".format(layer_num))
+    self._savefig("spectral_{}d_layer_{}.png".format(self.dim,layer_num))
+
+    # Quit if last layer reached
     if layer_num==(self.nb_layers-1):
       self.epoch_finished()
 
   def plot_graph(self, nodes, edges, layer_num):
+    edges = graph_utils.gaussian_kernel(nodes, N=2*10**1)
     logging.info("Plotting layer {}".format(layer_num))
-    n_pts = nodes.shape[0]
-    n_dim = len(nodes.shape)
+    if (edges != edges.transpose()).any():
+      logging.warning("Plotting asymetric matrix. Symmetrizing.")
+      edges = 0.5*edges+0.5*edges.transpose()
 
-    L = edges-np.diag(edges)
-    L = csgraph.laplacian(L,normed=False)
+    # L = graph_utils.get_normed_laplacian(edges)
+    L = csgraph.laplacian(edges,normed=True)
     w,v = np.linalg.eigh(L)
 
-    fst_eigvec = 1
-    sec_eigvec = fst_eigvec+1
-    spec_nodes = np.concatenate((v[:,fst_eigvec:fst_eigvec+1],v[:,sec_eigvec:sec_eigvec+1]),1)
+    # Add first num_eigvecs to spectral nodes
+    # Accounts for 2d and 3d cases
+    spec_nodes = v[:,1:2]
+    for i in range(2,self.dim+1):
+      spec_nodes = np.concatenate((spec_nodes,v[:,i:i+1]),1)
     self._euclidean_plot(spec_nodes,edges,layer_num)
 
+
 class Eig_Plot(Plot):
-  def __init__(self, args, nb_eigvals=10, **kwargs):
+  def __init__(self, args, nb_eigvals=20, **kwargs):
     super(Eig_Plot, self).__init__(args)
     self.nb_eigvals = nb_eigvals
     self.all_eigvals = np.zeros(shape=(args.nb_layer, self.nb_eigvals))
@@ -100,7 +139,7 @@ class Eig_Plot(Plot):
     # Must perform normalization for layers 1-nb_layer too
     if layer_num in {0,1}:
       self.trace = np.sum(eigvals)
-    eigvals /= self.trace
+    eigvals /= (self.trace*self.nb_eigvals)
     # Update eigenvalues
     # Accounting for samples which have fewer than nb_eigvals points
     self.all_eigvals[layer_num, :eigvals.shape[0]] += eigvals
@@ -109,14 +148,16 @@ class Eig_Plot(Plot):
     nb_eig = eigvals.shape[0]
     y_pos = np.arange(nb_eig)
     plt.bar(y_pos, eigvals, align='center', alpha=0.5)
-    plt.xlabel("Eigenvalues")
+    plt.title("Layer {} Eigenvalues".format(layer))
     plt.xticks(y_pos,np.arange(1,nb_eig+1))
     plt.xlim([-1,nb_eig])
+    plt.ylim(ymin=0.0, ymax=1.0)
     self._savefig("eig_layer_{}.png".format(layer))
 
   def epoch_finished(self):
     for i in range(self.nb_layers):
       logging.info("Plotting eigenvalues, layer {}".format(i))
+      self.all_eigvals /= np.max(self.all_eigvals)
       self._bar_plot(self.all_eigvals[i], i)
     logging.warning("All plotting complete. Exiting")
     exit()

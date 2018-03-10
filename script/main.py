@@ -22,7 +22,7 @@ def main():
       logging_level = logging.WARNING
     else:
       logging_level = logging.INFO
-    logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.DEBUG)
+    logging.basicConfig(format='%(message)s',level=logging.DEBUG)
     
     # Dataset-specific operations
     logging.info("Loading data...")

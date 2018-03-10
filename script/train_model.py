@@ -30,7 +30,10 @@ def train_net(net, X, y, w, criterion, optimizer, args):
             jet = jet.cuda()
             weight = weight.cuda()
 
-        out = net(jet, plots)
+        if i == 1:
+          out = net(jet, plots)
+        else:
+          out = net(jet)
 
         loss = criterion(out, ground_truth, weight)
         epoch_loss += loss.data[0]
