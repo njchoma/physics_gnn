@@ -1,9 +1,9 @@
 import logging
 import os.path as path
-import read_args as ra
 
-from run_experiment import train_model
+from experiment_handler import train_model
 from utils.in_out import make_dir_if_not_there
+import read_args as ra
 
 
 def main():

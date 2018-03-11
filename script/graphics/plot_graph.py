@@ -95,7 +95,7 @@ class Spectral_Plot(Plot):
       ax.set_xlim([nodes[:,0].min(),nodes[:,0].max()])
       ax.set_ylim([nodes[:,1].min(),nodes[:,1].max()])
       ax.set_zlim([nodes[:,2].min(),nodes[:,2].max()])
-    plt.title("Spectral embedding, layer {}".format(layer_num))
+    plt.title("Gaussian kernel, GCNN layer {}".format(layer_num))
     self._savefig("spectral_{}d_layer_{}.png".format(self.dim,layer_num))
 
     # Quit if last layer reached

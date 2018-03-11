@@ -30,7 +30,7 @@ def train_net(net, X, y, w, criterion, optimizer, args):
             jet = jet.cuda()
             weight = weight.cuda()
 
-        if i == 1:
+        if i == 0:
           out = net(jet, plots)
         else:
           out = net(jet)
