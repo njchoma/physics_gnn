@@ -4,7 +4,6 @@ import logging
 import numpy as np
 from scipy.sparse import csgraph
 import scipy.misc
-from sklearn.preprocessing import StandardScaler
 
 import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
@@ -131,11 +130,7 @@ class Eig_Plot(Plot):
 
   def plot_graph(self, nodes, edges, layer_num):
     # edges = graph_utils.gaussian_kernel(nodes, N=2*10**1)
-    x_std = StandardScaler().fit_transform(edges)
-    cov = np.cov(x_std.T)
-    ev , eig = np.linalg.eig(cov)
-    ev = ev[np.argsort(-ev)]
-    eigvals = ev.astype(np.float64)
+    eigvals = np.linalg.svd(edges, compute_uv=False)
     # Only use first nb_eigvals
     eigvals = eigvals[:self.nb_eigvals]
     # Set trace normalization for layer 0, 1
@@ -143,7 +138,7 @@ class Eig_Plot(Plot):
     # Must perform normalization for layers 1-nb_layer too
     if layer_num in {0,1}:
       self.trace = np.sum(eigvals)
-    eigvals /= (self.trace*self.nb_eigvals)
+    eigvals /= self.trace
     # Update eigenvalues
     # Accounting for samples which have fewer than nb_eigvals points
     self.all_eigvals[layer_num, :eigvals.shape[0]] += eigvals
@@ -159,9 +154,9 @@ class Eig_Plot(Plot):
     self._savefig("eig_layer_{}.png".format(layer))
 
   def epoch_finished(self):
+    self.all_eigvals /= np.max(self.all_eigvals)
     for i in range(self.nb_layers):
       logging.info("Plotting eigenvalues, layer {}".format(i))
-      self.all_eigvals /= np.max(self.all_eigvals)
       self._bar_plot(self.all_eigvals[i], i)
     logging.warning("All plotting complete. Exiting")
     exit()
