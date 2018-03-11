@@ -4,6 +4,7 @@ import logging
 import numpy as np
 from scipy.sparse import csgraph
 import scipy.misc
+from sklearn.preprocessing import StandardScaler
 
 import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
@@ -89,12 +90,12 @@ class Spectral_Plot(Plot):
       ax.add_collection(lc)
       ax.plot(nodes[:,0],nodes[:,1], 'ro')
     else:
-      ax = plt.gca(projection='3d')
+      ax = plt.gca(projection='3d',zorder=1)
       ax.add_collection3d(lc)
-      ax.scatter3D(nodes[:,0],nodes[:,1], nodes[:,2],c=node_cmap, cmap='autumn')
       ax.set_xlim([nodes[:,0].min(),nodes[:,0].max()])
       ax.set_ylim([nodes[:,1].min(),nodes[:,1].max()])
       ax.set_zlim([nodes[:,2].min(),nodes[:,2].max()])
+      ax.scatter3D(nodes[:,0],nodes[:,1], nodes[:,2],c=node_cmap, cmap='autumn',zorder=5)
     plt.title("Gaussian kernel, GCNN layer {}".format(layer_num))
     self._savefig("spectral_{}d_layer_{}.png".format(self.dim,layer_num))
 
@@ -129,9 +130,12 @@ class Eig_Plot(Plot):
     self.trace = 1.0
 
   def plot_graph(self, nodes, edges, layer_num):
-    L = edges-np.diag(edges)
-    L = csgraph.laplacian(L,normed=False)
-    eigvals,_ = np.linalg.eigh(L)
+    # edges = graph_utils.gaussian_kernel(nodes, N=2*10**1)
+    x_std = StandardScaler().fit_transform(edges)
+    cov = np.cov(x_std.T)
+    ev , eig = np.linalg.eig(cov)
+    ev = ev[np.argsort(-ev)]
+    eigvals = ev.astype(np.float64)
     # Only use first nb_eigvals
     eigvals = eigvals[:self.nb_eigvals]
     # Set trace normalization for layer 0, 1
