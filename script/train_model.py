@@ -7,9 +7,10 @@ from torch.autograd import Variable
 
 from graphics.roccurve import ROCCurve
 from graphics.plot_graph import construct_plot
+import loading.model.model_parameters as param
 
 
-def train_net(net, X, y, w, criterion, optimizer, args):
+def train_net(net, X, y, w, criterion, optimizer):
     """Trains net for one epoch using criterion loss and optimizer"""
 
     logging.warning('training on {} events'.format(len(y)))
@@ -17,7 +18,7 @@ def train_net(net, X, y, w, criterion, optimizer, args):
     step_loss = 0
     net.train()
 
-    plots = construct_plot(args)
+    plots = construct_plot(param.args)
 
     for i, ground_truth in enumerate(y):
         optimizer.zero_grad()
@@ -25,7 +26,7 @@ def train_net(net, X, y, w, criterion, optimizer, args):
         ground_truth = Variable(torch.Tensor([int(ground_truth)]))
         jet = Variable(torch.Tensor(X[i])).unsqueeze(0)
         weight = Variable(torch.Tensor([w[i]]))
-        if args.cuda:
+        if param.args.cuda:
             ground_truth = ground_truth.cuda()
             jet = jet.cuda()
             weight = weight.cuda()
@@ -40,8 +41,8 @@ def train_net(net, X, y, w, criterion, optimizer, args):
         epoch_loss += loss.data[0]
         step_loss += loss.data[0]
 
-        if (i + 1) % args.nbprint == 0:
-            logging.info('    {} : {}'.format(i + 1, step_loss / args.nbprint))
+        if (i + 1) % param.args.nbprint == 0:
+            logging.info('    {} : {}'.format(i + 1, step_loss / param.args.nbprint))
             step_loss = 0
 
         loss.backward()
@@ -52,7 +53,7 @@ def train_net(net, X, y, w, criterion, optimizer, args):
     return epoch_loss_avg
 
 
-def test_net(net, X, y, w, criterion, args, savedir, type_):
+def test_net(net, X, y, w, criterion, type_):
     """Tests the network, returns the ROC AUC and epoch loss"""
 
     # criterion = nn.BCELoss()
@@ -65,7 +66,7 @@ def test_net(net, X, y, w, criterion, args, savedir, type_):
         ground_truth = Variable(torch.Tensor([int(ground_truth)]))
         jet = Variable(torch.Tensor(X[i])).unsqueeze(0)
         weight = Variable(torch.Tensor([w[i]]))
-        if args.cuda:
+        if param.args.cuda:
             ground_truth = ground_truth.cuda()
             jet = jet.cuda()
             weight = weight.cuda()
@@ -79,7 +80,7 @@ def test_net(net, X, y, w, criterion, args, savedir, type_):
             logging.info('tested on {}'.format(i + 1))
 
     score = roccurve.roc_score(True)
-    fpr50 = roccurve.plot_roc_curve(args.name, type_, savedir, zooms=[1., 0.001, 0.0001])
+    fpr50 = roccurve.plot_roc_curve(param.args.name, type_, param.args.savedir, zooms=[1., 0.001, 0.0001])
     epoch_loss /= len(y)
     return score, epoch_loss, fpr50
 

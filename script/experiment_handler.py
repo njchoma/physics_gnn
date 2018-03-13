@@ -6,15 +6,16 @@ import os.path as path
 
 import train_model as model
 from loading.model import build_model
+import loading.model.model_parameters as param
 
 
-def train_model(args, train_X, train_y, train_w, test_X, test_y, test_w):
+def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
     """Loads data, recover network then train, test and save network"""
 
 
-    net = build_model.make_net_if_not_there(args, args.first_fm, args.savedir)
+    net = build_model.make_net_if_not_there(param.args, param.args.first_fm, param.args.savedir)
 
-    if args.cuda:
+    if param.args.cuda:
         net = net.cuda()
         logging.warning('Working on GPU')
     else:
@@ -22,45 +23,37 @@ def train_model(args, train_X, train_y, train_w, test_X, test_y, test_w):
         logging.warning('Working on CPU')
 
     criterion = nn.functional.binary_cross_entropy
-    learning_rate = args.lrate
-    lr_decay = args.lrdecay
-
-    # score_test, loss_test, fpr50_test = model.test_net(net, testfile, criterion, args)
-    # print_(
-    #     args.name + ' test : ' +
-    #     'AUC {: >.3E} -- loss {: >.3E} -- FPR {: >.3E}'.format(score_test, loss_test, fpr50_test)
-    # )
-    # assert False
 
     for epoch in range(50):
-        logging.info('learning rate : {}'.format(learning_rate))
-        optimizer = torch.optim.Adamax(net.parameters(), lr=learning_rate)
+        logging.info('learning rate : {}'.format(param.args.lrate))
+        optimizer = torch.optim.Adamax(net.parameters(), lr=param.args.lrate)
 
-        epoch_loss_avg = model.train_net(net, train_X, train_y, train_w, criterion, optimizer, args)
+        epoch_loss_avg = model.train_net(net, train_X, train_y, train_w, criterion, optimizer)
+        param.args.lrate *= param.args.lrdecay
         logging.info(
-            args.name + ' loss epoch {} : {}'.format(epoch + 1, epoch_loss_avg))
+            param.args.name + ' loss epoch {} : {}'.format(epoch + 1, epoch_loss_avg))
 
         # Model performance on subset of training data
-        score_train, loss_train, fpr50_train = model.test_net(net, train_X[:args.nbtest], train_y[:args.nbtest], train_w[:args.nbtest], criterion, args, args.savedir, "train")
+        score_train, loss_train, fpr50_train = model.test_net(net, train_X[:param.args.nbtest], train_y[:param.args.nbtest], train_w[:param.args.nbtest], criterion, "train")
         logging.info(
-            args.name + ' epoch {}. train : '.format(epoch + 1) +
+            param.args.name + ' epoch {}. train : '.format(epoch + 1) +
             'AUC {: >.3E}'.format(score_train)
             + ' -- loss {: >.3E}'.format(loss_train)
             + ' -- FPR {: >.3E}'.format(fpr50_train)
         )
 
         # Model performance on test data
-        score_test, loss_test, fpr50_test = model.test_net(net, test_X, test_y, test_w, criterion, args, args.savedir, "test")
+        score_test, loss_test, fpr50_test = model.test_net(net, test_X, test_y, test_w, criterion, "test")
         logging.info(
-            args.name + ' epoch {}.  test : '.format(epoch + 1) +
+            param.args.name + ' epoch {}.  test : '.format(epoch + 1) +
             'AUC {: >.3E}'.format(score_test)
             + ' -- loss {: >.3E}'.format(loss_test)
             + ' -- FPR {: >.3E}'.format(fpr50_test)
         )
 
-        with open(path.join(args.savedir, args.name + '.csv'), 'a') as fileres:
+        with open(path.join(param.args.savedir, param.args.name + '.csv'), 'a') as fileres:
             fileres.write(
-                str(learning_rate) + ','
+                str(param.args.lrate) + ','
                 + str(loss_train) + ','
                 + str(loss_test) + ','
                 + str(score_train) + ','
@@ -70,7 +63,11 @@ def train_model(args, train_X, train_y, train_w, test_X, test_y, test_w):
                 + str(epoch_loss_avg) + '\n'
             )
 
-        with open(path.join(args.savedir, args.name + '.pkl'), 'wb') as fileout:
+        try:
+          param.save_args()
+          with open(path.join(param.args.savedir, param.args.name + '.pkl'), 'wb') as fileout:
             pickle.dump(net, fileout)
-        logging.warning('Model saved\n')
-        learning_rate *= lr_decay
+          logging.warning('Model saved\n')
+        except:
+          logging.error("Issue saving model or model parameters")
+          exit()
