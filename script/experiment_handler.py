@@ -1,5 +1,6 @@
 import logging
 import pickle
+import time
 import torch
 import torch.nn as nn
 import os.path as path
@@ -25,6 +26,7 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
     criterion = nn.functional.binary_cross_entropy
 
     for epoch in range(50):
+        t0 = time.time()
         logging.info('learning rate : {}'.format(param.args.lrate))
         optimizer = torch.optim.Adamax(net.parameters(), lr=param.args.lrate)
 
@@ -63,6 +65,7 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
                 + str(epoch_loss_avg) + '\n'
             )
 
+        logging.info("Epoch took {} seconds".format(int(time.time()-t0)))
         try:
           param.save_args()
           with open(path.join(param.args.savedir, param.args.name + '.pkl'), 'wb') as fileout:

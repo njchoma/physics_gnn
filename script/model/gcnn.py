@@ -38,9 +38,10 @@ class GCNNSingleKernel(nn.Module):
         
         batch_size, fmap, nb_pts  = emb_in.size()
         # Create dummy first adjacency matrix
-        adj = Variable(torch.ones(batch_size, nb_pts, nb_pts))
+        adj = torch.ones(batch_size, nb_pts, nb_pts)
         if emb_in.is_cuda:
-          adj.cuda()
+          adj = adj.cuda()
+        adj = Variable(adj)
         # initiate operator
         adj_matrices = [kernel(adj, emb_in, 0) for kernel in self.kernels[0]]
         adj = self.combine_kernels[0](adj_matrices)
@@ -62,13 +63,14 @@ class GCNNSingleKernel(nn.Module):
 
         # Apply remaining Graph Convs
         for i, resgconv in enumerate(self.resgconvs):
+            layer_idx = i+1
             # Apply message passing to adjacency matrix
-            adj_matrices = [kernel.update(adj, emb_in, i) for kernel in self.kernels[i]]
-            adj = self.combine_kernels[i](adj_matrices)
+            adj_matrices = [kernel.update(adj, emb, layer_idx) for kernel in self.kernels[layer_idx]]
+            adj = self.combine_kernels[layer_idx](adj_matrices)
             operators = gc.join_operators(adj, self.operators)
             # Plot updated representation
             if plotting is not None:
-              plotting.plot_graph(emb.cpu().squeeze().t().data.numpy(), adj.cpu().squeeze().data.numpy(),i+1)
+              plotting.plot_graph(emb.cpu().squeeze().t().data.numpy(), adj.cpu().squeeze().data.numpy(),layer_idx)
             # Apply graph convolution
             emb, _, _ = spatialnorm(emb)
             emb = resgconv(operators, emb)

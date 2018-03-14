@@ -195,7 +195,7 @@ class ComplexGaussian(nn.Module):
 class QCDDist(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
-    def __init__(self, alpha, radius, periodic=False):
+    def __init__(self, fmaps, alpha, radius, periodic=False):
         super(QCDDist, self).__init__()
         self.alpha = alpha
         self.radius = radius
@@ -216,7 +216,7 @@ class QCDDist(Adj_Kernel):
 class FixedQCDAware(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
-    def __init__(self, alpha, beta, periodic=False, epsilon=1e-7):
+    def __init__(self, fmaps, alpha, beta, periodic=False, epsilon=1e-7):
         super(FixedQCDAware, self).__init__()
         self.alpha = alpha
         self.beta = beta
@@ -244,7 +244,7 @@ class FixedQCDAware(Adj_Kernel):
 class QCDAware(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
-    def __init__(self, alpha, beta, periodic=False):
+    def __init__(self, fmaps, alpha, beta, periodic=False):
         super(QCDAware, self).__init__()
 
         alpha = Parameter(alpha * (torch.rand(1, 1) * 0.02 + 0.99))
@@ -319,7 +319,7 @@ class QCDAware(Adj_Kernel):
 class QCDAwareMeanNorm(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
-    def __init__(self, alpha, beta, periodic=False):
+    def __init__(self, fmaps, alpha, beta, periodic=False):
         super(QCDAwareMeanNorm, self).__init__()
 
         alpha = Parameter(alpha * (torch.rand(1, 1) * 0.02 + 0.99))
@@ -385,7 +385,7 @@ class QCDAwareMeanNorm(Adj_Kernel):
 class QCDAwareNoNorm(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
-    def __init__(self, alpha, beta, periodic=False):
+    def __init__(self, fmaps, alpha, beta, periodic=False):
         super(QCDAwareNoNorm, self).__init__()
 
         alpha = Parameter(alpha * (torch.rand(1, 1) * 0.02 + 0.99))

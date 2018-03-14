@@ -7,6 +7,50 @@ from torch.nn import Parameter
 
 from model import sparse
 
+
+def cartesian(tensor):
+  '''
+  Computes cartesian product.
+  If tensor is:
+  [[0 1 2],
+   [3 4 5]]
+  Then a = [[0 1 2],   and b = [[0 1 2],
+            [0 1 2],            [3,4,5],
+            [3,4,5],            [0 1 2],
+            [3 4 5]]            [3 4 5]]
+  and output is
+  [[0 1 2 0 1 2],
+   [0 1 2 3 4 5],
+   [3 4 5 0 1 2],
+   [3 4 5 3 4 5]]
+  '''
+  n_repeats, dim2 = tensor.size()[0:2]
+  a = tensor.repeat(1,n_repeats)
+  a = a.resize(n_repeats*n_repeats,dim2)
+  b = tensor.repeat(n_repeats,1)
+  return torch.cat((a,b),1)
+
+def _get_adj(tensor,adj_size):
+  '''
+  If tensor is 4x1 tensor
+  [[11], [12], [21], [22]]
+  returns 2x2 tensor
+  [[11 12],
+   [21 22]]
+  '''
+  return tensor.resize(adj_size, adj_size)
+
+
+def make_samples(emb_in,sum_weights,idx):
+  '''
+  Assumes emb_in is of shape nb_nodes x fmap
+  '''
+  nb_node = emb_in.size()[0]
+  sample = cartesian(emb_in)
+  weights = sum_weights.resize(nb_node,1).repeat(nb_node,1)
+  sample = torch.cat((sample,weights),1)
+  return sample
+
 def get_summed_weights(adj_in):
   # Assume adj_in is shape nb_node x nb_node
   # Calculate sum weights
@@ -112,42 +156,9 @@ class MPNNdirected(Adj_Kernel):
       adj = functional.sigmoid(adj)
       return adj
 
-def cartesian(tensor):
-  '''
-  Computes cartesian product.
-  If tensor is:
-  [[0 1 2],
-   [3 4 5]]
-  Then a = [[0 1 2],   and b = [[0 1 2],
-            [0 1 2],            [3,4,5],
-            [3,4,5],            [0 1 2],
-            [3 4 5]]            [3 4 5]]
-  and output is
-  [[0 1 2 0 1 2],
-   [0 1 2 3 4 5],
-   [3 4 5 0 1 2],
-   [3 4 5 3 4 5]]
-  '''
-  n_repeats, dim2 = tensor.size()[0:2]
-  a = tensor.repeat(1,n_repeats)
-  a = a.resize(n_repeats*n_repeats,dim2)
-  b = tensor.repeat(n_repeats,1)
-  return torch.cat((a,b),1)
-
-def get_adj(tensor,adj_size):
-  '''
-  If tensor is 4x1 tensor
-  [[11], [12], [21], [22]]
-  returns 2x2 tensor
-  [[11 12],
-   [21 22]]
-  '''
-  return tensor.resize(adj_size, adj_size)
-
-
 
 class MLPdirected(Adj_Kernel):
-   def __init__(self,fmaps,nb_hidden,sparse):
+   def __init__(self,fmaps,nb_hidden,sparse=None):
       super(MLPdirected, self).__init__(sparse)
       self.fmaps = fmaps
       self.layer1 = nn.Linear(2*fmaps+1, nb_hidden)
@@ -163,7 +174,7 @@ class MLPdirected(Adj_Kernel):
         # Create samples from emb_in s.t. an MLP will create
         # edges for every j,k node pair
         sum_weights = get_summed_weights(adj_in[i])
-        sample = self.sparse.make_samples(emb_in[i].transpose(0,1),sum_weights,idx)
+        sample = make_samples(emb_in[i].transpose(0,1),sum_weights,idx)
         # MLP is applied to every j,k vertex pair
         # to calculate new j,k edge weights
         edge_out = self.layer1(sample)
@@ -171,14 +182,14 @@ class MLPdirected(Adj_Kernel):
         edge_out = self.layer2(edge_out)
         # Copy output of MLP into adj matrix
         # for every j,k pair as previously defined in sparse class
-        adj_list.append(self.sparse.get_adj(edge_out).unsqueeze(0))
+        adj_list.append(_get_adj(edge_out,nb_node).unsqueeze(0))
       # Apply sigmoid to normalize edge weights
       adj = torch.cat(tuple(adj_list),0)
       adj = functional.sigmoid(adj)
       return adj
 
 class Identity(Adj_Kernel):
-  def __init__(self):
+  def __init__(self, *args, **kwargs):
     super(Identity, self).__init__()
 
   def forward(self, adj_in, emb_in,idx):

@@ -43,7 +43,6 @@ def _get_kernel_class(kernel_name):
   # Instantiate adjacency kernels
   elif kernel_name == 'Gaussian':
     kernel = general.Gaussian
-    ker_args += (param.args.nb_feature_maps,)
     ker_kwargs['sigma'] = param.args.sigma
   elif kernel_name == 'DirectedGaussian':
     kernel = general.DirectedGaussian
@@ -52,6 +51,7 @@ def _get_kernel_class(kernel_name):
   elif kernel_name == 'MLPdirected':
     kernel = general.MLPdirected
     ker_args += (param.args.nb_MLPadj_hidden,)
+    ker_args += (None,)
   elif kernel_name == 'Identity':
     kernel = general.Identity
   else:
@@ -62,13 +62,15 @@ def _get_one_kernel(kernel_name):
   ker_options = kernel_name.split('-')
   kernel, ker_args, ker_kwargs  = _get_kernel_class(ker_options[0])
   kernels = []
+  # Initiate first kernel with proper nb feature maps
+  init_kernel = kernel(*(param.args.first_fm,)+ker_args,**ker_kwargs)
+  kernels.append(init_kernel)
   if 'layerwise' in ker_options:
     # Distinct kernel instance for each layer
-    for i in range(param.args.nb_layer):
-      kernels.append(kernel(*ker_args, **ker_kwargs))
+    for i in range(1,param.args.nb_layer):
+      kernels.append(kernel(*(param.args.nb_feature_maps,)+ker_args, **ker_kwargs))
   else: # Use same kernel instance at all layers
-    init_kernel = kernel(*ker_args, **ker_kwargs)
-    for i in range(param.args.nb_layer):
+    for i in range(1,param.args.nb_layer):
       kernels.append(init_kernel)
   return kernels
 
