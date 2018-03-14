@@ -1,10 +1,11 @@
 from __future__ import print_function
-from model import sparse
 import torch
 import torch.nn as nn
 import torch.nn.functional as functional
 from torch.autograd import Variable
 from torch.nn import Parameter
+
+from model import sparse
 
 def get_summed_weights(adj_in):
   # Assume adj_in is shape nb_node x nb_node
@@ -25,14 +26,12 @@ class Adj_Kernel(nn.Module):
     super(Adj_Kernel,self).__init__()
     self.sparse = sparse
 
+  def forward(self, args, **kwargs):
+    raise Exception("Must be implemented by child class")
+  
+  def update(self, *args, **kwargs):
+    return self.forward(*args, **kwargs)
 
-class Identity(Adj_Kernel):
-
-   def __init__(self,fmaps, **kwargs):
-      super(Identity, self).__init__()
-
-   def forward(self, adj_in, emb_in, sparse_idx):
-      return adj_in
 
 class Gaussian(Adj_Kernel):
    def __init__(self,fmaps,sparse=None,sigma=2.0):
@@ -178,3 +177,18 @@ class MLPdirected(Adj_Kernel):
       adj = functional.sigmoid(adj)
       return adj
 
+class Identity(Adj_Kernel):
+  def __init__(self):
+    super(Identity, self).__init__()
+
+  def forward(self, adj_in, emb_in,idx):
+    batches, features, nodes = emb_in.size()
+    ones = torch.ones(nodes)
+    if emb_in.is_cuda:
+      ones = ones.cuda()
+    identity = ones.diag().expand(batches, nodes, nodes)
+    identity = Variable(identity)
+    return identity
+
+  def update(self, adj_in, *args, **kwargs):
+    return adj_in

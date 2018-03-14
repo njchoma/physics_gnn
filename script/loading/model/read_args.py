@@ -10,8 +10,9 @@ def read_args():
     add_arg('--name', dest='name', help='network reference')
     add_arg('--data', dest='data', help='project to take data from', default='NYU')
 
-    add_arg('--kernel', dest='kernel', help='name of kernel used', default='FCG')
-    add_arg('--sigma', dest='sigma', help='kernel stdev initial value', type=float)
+    add_arg('--kernels', dest='kernels', help='List of kernels. Add \'-layerwise\' to kernel name to create one kernel instance per layer. E.g. \'MLPDirected-layerwise\'', default='Gaussian',nargs='+')
+    add_arg('--combine_kernels', dest='combine_kernels', help='Method for combining kernels to form single adj matrix', default='Affine_Normalized')
+    add_arg('--sigma', dest='sigma', help='kernel stdev initial value', type=float, default = 2.0)
 
     add_arg('--fm', dest='nb_feature_maps', help='number of feature maps per layer', type=int)
     add_arg('--edge_fm', dest='nb_edge_feature', type=int,
@@ -29,7 +30,6 @@ def read_args():
     add_arg('--lr', dest='lrate', help='learning rate', type=float)
     add_arg('--lrdecay', dest='lrdecay', help='learning rate decay, `lr *= lrdecay` each epoch',
             type=float, default=0.95)
-    add_arg('--adj_kernel', dest='adj_kernel', help='name of kernel for updating adjacency matrix',default='Identity')
     add_arg('--sparse', dest='sparse', help='type of sparsity to use when updating adjacency matrix',type=str,default='None')
     add_arg('--nb_sparse', dest='nb_sparse', help='number of non-zero edges associated with each node when updating adjacency matrix',type=int,default=10)
     add_arg('--nb_MLPadj_hidden', dest='nb_MLPadj_hidden', help='number of hidden units associated with each adj_kernel layer when using MLP adj_kernel',type=int,default=8)

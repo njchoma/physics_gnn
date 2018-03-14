@@ -1,6 +1,7 @@
 import logging
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 from torch.nn.functional import sigmoid
 
 from model import operators as op
@@ -15,18 +16,16 @@ class GCNNSingleKernel(nn.Module):
     logistic regression.
     """
 
-    def __init__(self, kernel, adj_kernels, sparse, frst_fm, fmaps, nb_layer):
+    def __init__(self, kernels, combine_kernels, frst_fm, fmaps, nb_layer):
         super(GCNNSingleKernel, self).__init__()
 
         # self.operators = [op.degree, op.adjacency, op.adjacency_transpose]
         self.operators = [op.degree, op.adjacency]
         self.nb_op = len(self.operators)
 
-        self.kernel = kernel
+        self.kernels = kernels
+        self.combine_kernels = combine_kernels
         self.fst_gconv = gc.ResGOpConv(frst_fm, fmaps, self.nb_op)
-
-        self.sparse = sparse
-        self.adj_kernels = nn.ModuleList(adj_kernels)
 
         self.resgconvs = nn.ModuleList(
             [gc.ResGOpConv(fmaps, fmaps, self.nb_op)
@@ -37,8 +36,14 @@ class GCNNSingleKernel(nn.Module):
 
     def forward(self, emb_in, plotting=None):
         
+        batch_size, fmap, nb_pts  = emb_in.size()
+        # Create dummy first adjacency matrix
+        adj = Variable(torch.ones(batch_size, nb_pts, nb_pts))
+        if emb_in.is_cuda:
+          adj.cuda()
         # initiate operator
-        adj = self.kernel(emb_in)
+        adj_matrices = [kernel(adj, emb_in, 0) for kernel in self.kernels[0]]
+        adj = self.combine_kernels[0](adj_matrices)
         check_for_nan(adj, 'NAN in operators')
 
         # Plot sample
@@ -50,13 +55,16 @@ class GCNNSingleKernel(nn.Module):
         # apply Graph Conv
         emb = self.fst_gconv(operators, emb_in)
 
+        '''
         # set sparsity
         sparse_idx = self.sparse.get_indices(emb[0].transpose(0,1))
+        '''
 
         # Apply remaining Graph Convs
         for i, resgconv in enumerate(self.resgconvs):
             # Apply message passing to adjacency matrix
-            adj = self.adj_kernels[i](adj, emb, sparse_idx)
+            adj_matrices = [kernel.update(adj, emb_in, i) for kernel in self.kernels[i]]
+            adj = self.combine_kernels[i](adj_matrices)
             operators = gc.join_operators(adj, self.operators)
             # Plot updated representation
             if plotting is not None:

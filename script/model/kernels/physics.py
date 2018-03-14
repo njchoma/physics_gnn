@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 from torch.autograd import Variable
+
+from model.kernels.general import Adj_Kernel
 import utils.tensor as ts
 
 
@@ -56,6 +58,8 @@ def _renorm(bmatrix):
     ts.check_for_inf(bmat_center, 'INF in _renorm : bmat_center', action=print, args=(bmat_center, bmatrix, bmat_min))
 
     return bmat_center
+
+
 
 
 class FixedGaussian(nn.Module):
@@ -186,9 +190,9 @@ class ComplexGaussian(nn.Module):
         adj_i = adj * diff[:, 1, :, :].squeeze(1)
 
         return (adj_r, adj_i)
+    
 
-
-class QCDDist(nn.Module):
+class QCDDist(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, alpha, radius, periodic=False):
@@ -204,9 +208,12 @@ class QCDDist(nn.Module):
         d_ij = sqdist * min_momenta
 
         return d_ij
+    
+    def update(self, adj_in, *args, **kwargs):
+        return adj_in
 
 
-class FixedQCDAware(nn.Module):
+class FixedQCDAware(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, alpha, beta, periodic=False, epsilon=1e-7):
@@ -229,9 +236,12 @@ class FixedQCDAware(nn.Module):
         w_ij = (-d_ij_norm).exp()
 
         return w_ij
+    
+    def update(self, adj_in, *args, **kwargs):
+        return adj_in
 
 
-class QCDAware(nn.Module):
+class QCDAware(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, alpha, beta, periodic=False):
@@ -300,9 +310,13 @@ class QCDAware(nn.Module):
         dij = torch.stack(dij, dim=0)
 
         return dij
+    
+    def update(self, adj_in, *args, **kwargs):
+        return adj_in
 
 
-class QCDAwareMeanNorm(nn.Module):
+
+class QCDAwareMeanNorm(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, alpha, beta, periodic=False):
@@ -319,7 +333,7 @@ class QCDAwareMeanNorm(nn.Module):
         self.softmax = nn.Softmax()
         self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
-    def forward(self, emb):
+    def forward(self, adj_in, emb, *args, **kwargs):
         ts.check_for_nan(self.alpha, 'nan in kernel param : alpha', )
         ts.check_for_nan(self.beta, 'nan in kernel param : beta')
 
@@ -351,6 +365,9 @@ class QCDAwareMeanNorm(nn.Module):
 
         return w_ij
 
+    def update(self, adj_in, *args, **kwargs):
+        return adj_in
+
     def _softmax(self, dij):
         batch = dij.size()[0]
 
@@ -365,7 +382,7 @@ class QCDAwareMeanNorm(nn.Module):
         return dij
 
 
-class QCDAwareNoNorm(nn.Module):
+class QCDAwareNoNorm(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, alpha, beta, periodic=False):
@@ -414,8 +431,11 @@ class QCDAwareNoNorm(nn.Module):
 
         return dij
 
+    def update(self, adj_in, *args, **kwargs):
+        return adj_in
 
-class QCDAwareOld(nn.Module):
+
+class QCDAwareOld(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, alpha, beta, epsilon=1e-5):
@@ -461,3 +481,6 @@ class QCDAwareOld(nn.Module):
         dij = torch.stack(dij, dim=0)
         
         return dij
+
+    def update(self, adj_in, *args, **kwargs):
+        return adj_in
