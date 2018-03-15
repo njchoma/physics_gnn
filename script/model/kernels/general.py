@@ -76,6 +76,18 @@ class Adj_Kernel(nn.Module):
   def update(self, *args, **kwargs):
     return self.forward(*args, **kwargs)
 
+# Abstract adjacency kernel class
+# which keeps reuses first layer adj matrix
+class Adj_Kernel_fixed_update(Adj_Kernel):
+  def __init__(self):
+    super(Adj_Kernel_fixed_update,self).__init__()
+
+  def save_adj(self, adj_in):
+    self.adj_matrix = adj_in.clone()
+
+  def update(self, *args, **kwargs):
+    return self.adj_matrix.clone()
+
 
 class Gaussian(Adj_Kernel):
    def __init__(self,fmaps,sparse=None,sigma=2.0):
@@ -200,6 +212,3 @@ class Identity(Adj_Kernel):
     identity = ones.diag().expand(batches, nodes, nodes)
     identity = Variable(identity)
     return identity
-
-  def update(self, adj_in, *args, **kwargs):
-    return adj_in

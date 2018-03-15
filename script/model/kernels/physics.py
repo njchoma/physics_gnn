@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.nn import Parameter
 from torch.autograd import Variable
 
-from model.kernels.general import Adj_Kernel
+from model.kernels.general import Adj_Kernel_fixed_update
 import utils.tensor as ts
 
 
@@ -192,7 +192,7 @@ class ComplexGaussian(nn.Module):
         return (adj_r, adj_i)
     
 
-class QCDDist(Adj_Kernel):
+class QCDDist(Adj_Kernel_fixed_update):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, fmaps, alpha, radius, periodic=False):
@@ -213,7 +213,7 @@ class QCDDist(Adj_Kernel):
         return adj_in
 
 
-class FixedQCDAware(Adj_Kernel):
+class FixedQCDAware(Adj_Kernel_fixed_update):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, fmaps, alpha, beta, periodic=False, epsilon=1e-7):
@@ -241,7 +241,7 @@ class FixedQCDAware(Adj_Kernel):
         return adj_in
 
 
-class QCDAware(Adj_Kernel):
+class QCDAware(Adj_Kernel_fixed_update):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, fmaps, alpha, beta, periodic=False):
@@ -316,7 +316,7 @@ class QCDAware(Adj_Kernel):
 
 
 
-class QCDAwareMeanNorm(Adj_Kernel):
+class QCDAwareMeanNorm(Adj_Kernel_fixed_update):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, fmaps, alpha, beta, periodic=False):
@@ -363,10 +363,9 @@ class QCDAwareMeanNorm(Adj_Kernel):
         w_ij = self._softmax(d_ij_norm)
         # w_ij = d_ij_norm.exp()
 
+        # Save adj matrix for later layers
+        self.save_adj(w_ij)
         return w_ij
-
-    def update(self, adj_in, *args, **kwargs):
-        return adj_in
 
     def _softmax(self, dij):
         batch = dij.size()[0]
@@ -382,7 +381,7 @@ class QCDAwareMeanNorm(Adj_Kernel):
         return dij
 
 
-class QCDAwareNoNorm(Adj_Kernel):
+class QCDAwareNoNorm(Adj_Kernel_fixed_update):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, fmaps, alpha, beta, periodic=False):
@@ -435,7 +434,7 @@ class QCDAwareNoNorm(Adj_Kernel):
         return adj_in
 
 
-class QCDAwareOld(Adj_Kernel):
+class QCDAwareOld(Adj_Kernel_fixed_update):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, alpha, beta, epsilon=1e-5):

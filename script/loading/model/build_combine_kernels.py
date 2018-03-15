@@ -4,8 +4,12 @@ import model.kernels.combine_kernels as combine_ker
 from loading.model import model_parameters as param
 
 def _get_combine_kernel_class(combine_name):
-  if combine_name == 'Affine_Normalized':
+  if combine_name == 'Affine':
+    combine = combine_ker.Affine
+  elif combine_name == 'Affine_Normalized':
     combine = combine_ker.Affine_Normalized
+  elif combine_name == 'Fixed_Balanced':
+    combine = combine_ker.Fixed_Balanced
   else:
     raise Exception("Combine kernel method {} not recognized".format(combine_name))
 

@@ -18,7 +18,7 @@ def main():
       logging_level = logging.WARNING
     else:
       logging_level = logging.INFO
-    logging.basicConfig(format='%(message)s',level=logging.DEBUG)
+    logging.basicConfig(format='%(message)s',level=logging_level)
     
     # Set up model directory
     project_root_dir = path.dirname(path.abspath(path.join(__file__, '..')))
