@@ -44,7 +44,7 @@ class GCNNSingleKernel(nn.Module):
         adj = Variable(adj)
         # initiate operator
         adj_matrices = [kernel(adj, emb_in, 0) for kernel in self.kernels[0]]
-        adj = self.combine_kernels[0](adj_matrices)
+        adj = self.combine_kernels[0](adj, adj_matrices)
         check_for_nan(adj, 'NAN in operators')
 
         # Plot sample
@@ -55,18 +55,12 @@ class GCNNSingleKernel(nn.Module):
 
         # apply Graph Conv
         emb = self.fst_gconv(operators, emb_in)
-
-        '''
-        # set sparsity
-        sparse_idx = self.sparse.get_indices(emb[0].transpose(0,1))
-        '''
-
         # Apply remaining Graph Convs
         for i, resgconv in enumerate(self.resgconvs):
             layer_idx = i+1
             # Apply message passing to adjacency matrix
             adj_matrices = [kernel.update(adj, emb, layer_idx) for kernel in self.kernels[layer_idx]]
-            adj = self.combine_kernels[layer_idx](adj_matrices)
+            adj = self.combine_kernels[layer_idx](adj, adj_matrices)
             operators = gc.join_operators(adj, self.operators)
             # Plot updated representation
             if plotting is not None:

@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 
+def _zero_incoming_adj(adj):
+  return adj - adj
+
 class Affine(nn.Module):
   def __init__(self, nb_kernels):
     super(Affine, self).__init__()
@@ -11,10 +14,10 @@ class Affine(nn.Module):
   def normalize(self, adj):
     return adj
 
-  def forward(self, adj_list):
+  def forward(self, adj, adj_list):
     # Affine combination
-    adj_out = adj_list[0]*self.params[0]
-    for i in range(1, self.nb_kernels):
+    adj_out = _zero_incoming_adj(adj)
+    for i in range(self.nb_kernels):
       adj_out += adj_list[i]*self.params[i]
     
     # Normalize
@@ -35,9 +38,9 @@ class Fixed_Balanced(nn.Module):
     super(Fixed_Balanced, self).__init__()
     self.nb_kernels = nb_kernels
 
-  def forward(self, adj_list):
-    adj_out = adj_list[0]
-    for i in range(1, self.nb_kernels):
-      adj_out += adj_list[i]
-    adj_out /= self.nb_kernels
-    return adj_out
+  def forward(self, adj, adj_list):
+    adj = _zero_incoming_adj(adj)
+    for i in range(self.nb_kernels):
+      adj += adj_list[i]
+    adj /= self.nb_kernels
+    return adj

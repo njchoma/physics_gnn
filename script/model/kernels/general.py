@@ -83,10 +83,10 @@ class Adj_Kernel_fixed_update(Adj_Kernel):
     super(Adj_Kernel_fixed_update,self).__init__()
 
   def save_adj(self, adj_in):
-    self.adj_matrix = adj_in.clone()
+    self.adj_matrix = adj_in
 
   def update(self, *args, **kwargs):
-    return self.adj_matrix.clone()
+    return self.adj_matrix
 
 
 class Gaussian(Adj_Kernel):
@@ -200,7 +200,7 @@ class MLPdirected(Adj_Kernel):
       adj = functional.sigmoid(adj)
       return adj
 
-class Identity(Adj_Kernel):
+class Identity(Adj_Kernel_fixed_update):
   def __init__(self, *args, **kwargs):
     super(Identity, self).__init__()
 
@@ -211,4 +211,5 @@ class Identity(Adj_Kernel):
       ones = ones.cuda()
     identity = ones.diag().expand(batches, nodes, nodes)
     identity = Variable(identity)
+    self.save_adj(identity)
     return identity
