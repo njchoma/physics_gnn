@@ -9,10 +9,16 @@ def init(args_in):
   global args
   try:
     args = _load_args(loadfile)
-    logging.warning("Model parameters restored from previous training")
+    logging.warning("Model arguments restored from previous training")
+    # Update run-specific arguments
+    args.cuda = args_in.cuda
+    args.plot = args_in.plot
+    args.nbtrain  = args_in.nbtrain
+    args.nbtest   = args_in.nbtest
+    args.nbprint  = args_in.nbprint
   except:
     args = args_in
-    logging.warning("Model parameters created")
+    logging.warning("Model arguments created")
 
 def _load_args(param_file):
   with open(param_file,'rb') as filein:
@@ -23,4 +29,4 @@ def save_args():
   savefile = os.path.join(args.savedir, param_name)
   with open(savefile, 'wb') as fileout:
     pickle.dump(args, fileout)
-  logging.warning("Model parameters saved")
+  logging.warning("Model arguments saved")

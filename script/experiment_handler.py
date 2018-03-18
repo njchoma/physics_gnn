@@ -69,7 +69,7 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
         try:
           param.save_args()
           with open(path.join(param.args.savedir, param.args.name + '.pkl'), 'wb') as fileout:
-            pickle.dump(net, fileout)
+            pickle.dump(net.cpu(), fileout)
           logging.warning('Model saved\n')
         except:
           logging.error("Issue saving model or model parameters")
