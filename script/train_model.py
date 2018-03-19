@@ -8,6 +8,7 @@ from torch.autograd import Variable
 from graphics.roccurve import ROCCurve
 from graphics.plot_graph import construct_plot
 import loading.model.model_parameters as param
+import data_ops.batching as batching
 
 
 def train_net(net, X, y, w, criterion, optimizer):
@@ -20,21 +21,37 @@ def train_net(net, X, y, w, criterion, optimizer):
 
     plots = construct_plot(param.args)
 
-    for i, ground_truth in enumerate(y):
+    batch_idx = batching.get_batches(len(y), 
+                                     param.args.nb_batch, 
+                                     param.args.shuffle_while_training)
+
+    for i, idx in enumerate(batch_idx):
         optimizer.zero_grad()
 
-        ground_truth = Variable(torch.Tensor([int(ground_truth)]))
-        jet = Variable(torch.Tensor(X[i])).unsqueeze(0)
-        weight = Variable(torch.Tensor([w[i]]))
+        import numpy as np
+        # X = [np.random.randint(0, 10, size=(6,3))]
+        X = [np.ones((6,2)), np.random.randint(0, 10, size=(6,3))]
+        print(idx)
+        batch_X, adj_mask = batching.pad_batch([X[s] for s in idx])
+        batch_y = [int(y[s]) for s in idx]
+        batch_w = [w[s] for s in idx]
+
+        ground_truth = Variable(torch.Tensor(batch_y))
+        jet = Variable(torch.Tensor(batch_X))
+        weight = Variable(torch.Tensor(batch_w))
+
+        print(jet)
+
+
         if param.args.cuda:
             ground_truth = ground_truth.cuda()
             jet = jet.cuda()
             weight = weight.cuda()
 
         if i == 2:
-          out = net(jet, plots)
+          out = net(jet, adj_mask, plots)
         else:
-          out = net(jet)
+          out = net(jet, adj_mask)
           # out = net(jet, plots)
 
         loss = criterion(out, ground_truth, weight)

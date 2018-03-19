@@ -34,17 +34,28 @@ class GCNNSingleKernel(nn.Module):
         self.instance_norm = nn.InstanceNorm1d(1)
         self.fcl = nn.Linear(fmaps, 1)
 
-    def forward(self, emb_in, plotting=None):
+    def forward(self, emb_in, adj_mask, plotting=None):
         
         batch_size, fmap, nb_pts  = emb_in.size()
         # Create dummy first adjacency matrix
+        if adj_mask is not None:
+          mask = torch.Tensor(adj_mask)
         adj = torch.ones(batch_size, nb_pts, nb_pts)
         if emb_in.is_cuda:
           adj = adj.cuda()
+          if adj_mask is not None:
+            mask = mask.cuda()
         adj = Variable(adj)
+        if adj_mask is not None:
+          mask = Variable(mask)
         # initiate operator
+        print(adj)
+        print("adj ^^")
+        print(mask)
         adj_matrices = [kernel(adj, emb_in, 0) for kernel in self.kernels[0]]
         adj = self.combine_kernels[0](adj, adj_matrices)
+        if adj_mask is not None:
+          adj = torch.mul(adj, mask)
         check_for_nan(adj, 'NAN in operators')
 
         # Plot sample
@@ -61,6 +72,8 @@ class GCNNSingleKernel(nn.Module):
             # Apply message passing to adjacency matrix
             adj_matrices = [kernel.update(adj, emb, layer_idx) for kernel in self.kernels[layer_idx]]
             adj = self.combine_kernels[layer_idx](adj, adj_matrices)
+            if adj_mask is not None:
+              adj = torch.mul(adj, mask)
             operators = gc.join_operators(adj, self.operators)
             # Plot updated representation
             if plotting is not None:
@@ -84,6 +97,7 @@ class GCNNSingleKernel(nn.Module):
         if (emb != emb).data.sum() > 0:
             print('WARNING : NAN')
 
+        exit()
         return emb
 
 
