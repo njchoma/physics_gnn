@@ -333,22 +333,27 @@ class QCDAwareMeanNorm(Adj_Kernel_fixed_update):
         self.softmax = nn.Softmax()
         self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
-    def forward(self, adj_in, emb, *args, **kwargs):
+    def forward(self, adj_in, emb, mask, batch_nb_nodes, *args, **kwargs):
+        nb_batch, _, nb_node = emb.size()
         ts.check_for_nan(self.alpha, 'nan in kernel param : alpha', )
         ts.check_for_nan(self.beta, 'nan in kernel param : beta')
 
         sqdist = self.sqdist(emb)
         ts.check_for_inf(sqdist, 'inf in kernel : sqdist')
         momentum = emb[:, 4, :]
-        mean_momentum = momentum.mean(1).expand_as(momentum)
+        mean_momentum = momentum.sum(1,keepdim=True)
+        mean_momentum = torch.div(mean_momentum, batch_nb_nodes.unsqueeze(1))
+        mean_momentum = mean_momentum.repeat(1,nb_node)
         momentum /= mean_momentum
 
         alpha = self.alpha.expand_as(momentum)
         # alpha.register_hook(_hook_reduce_grad(100))
-        pow_momenta = (2 * alpha * momentum.log()).exp()
+        # Need to add small amt to momentum to prevent nan in backward pass
+        pow_momenta = (2 * alpha * (momentum+10**-20).log()).exp()
         ts.check_for_nan(pow_momenta, 'NAN in kernel : pow_momenta')
         min_momenta = ts.sym_min(pow_momenta)
         min_momenta.register_hook(ts.HookCheckForNan('NAN in backward min_momenta', action=print))
+        min_momenta = min_momenta.unsqueeze(1).repeat(1, nb_node, 1)
         d_ij_alpha = sqdist * min_momenta
         d_ij_alpha.register_hook(ts.HookCheckForNan('NAN in backward d_ij_alpha', action=print))
         ts.check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
@@ -360,6 +365,7 @@ class QCDAwareMeanNorm(Adj_Kernel_fixed_update):
         d_ij_norm = - beta * d_ij_alpha
         d_ij_norm.register_hook(ts.HookCheckForNan('NAN in backward d_ij_norm', action=print))
         ts.check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
+        d_ij_norm = d_ij_norm * mask
         w_ij = self._softmax(d_ij_norm)
         # w_ij = d_ij_norm.exp()
 

@@ -69,7 +69,10 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
         try:
           param.save_args()
           with open(path.join(param.args.savedir, param.args.name + '.pkl'), 'wb') as fileout:
+            # net -> cpu in case later running without cuda
             pickle.dump(net.cpu(), fileout)
+            if (param.args.cuda):
+              net.cuda()
           logging.warning('Model saved\n')
         except:
           logging.error("Issue saving model or model parameters")

@@ -52,8 +52,9 @@ def degree(adj):
     """Degree matrix"""
 
     def _degree_one(adj):
-        deg = adj.sum(1)  # operators are used with right side dot product
-        deg = deg.expand_as(adj)
+        batch_size, nb_node, _ = adj.size()
+        deg = adj.sum(1,keepdim=True)  # operators are used with right side dot product
+        deg = deg.repeat(1, nb_node, 1)
         operator = identity(adj) * deg
 
         return operator
