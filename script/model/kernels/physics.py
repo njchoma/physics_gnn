@@ -136,7 +136,7 @@ class Gaussian(nn.Module):
         self.norm = norm
         self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
-    def forward(self, emb):
+    def forward(self, emb, *args, **kwargs):
         """takes the exponential of squared distances"""
 
         adj = gaussian(self.sqdist(emb), self.sigma)

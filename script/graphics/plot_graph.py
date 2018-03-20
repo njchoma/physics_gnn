@@ -37,6 +37,7 @@ def construct_plot(args):
 
 class Plot(object):
   def __init__(self, args, **kwargs):
+    self.args = args
     self.nb_samples = args.nbtrain
     self.nb_layers = args.nb_layer
     self.plot_dir = os.path.join(args.savedir, 'plots')
@@ -104,6 +105,9 @@ class Spectral_Plot(Plot):
 
   def plot_graph(self, nodes, edges, layer_num):
     edges = graph_utils.gaussian_kernel(nodes, N=2*10**1)
+    edges_sum = edges.sum(axis=1)
+    vk = Visualize_Kernel(self.args)
+    vk.plot_graph(nodes, edges, layer_num-1)
     logging.info("Plotting layer {}".format(layer_num))
     if (edges != edges.transpose()).any():
       logging.warning("Plotting asymetric matrix. Symmetrizing.")
@@ -129,7 +133,7 @@ class Eig_Plot(Plot):
     self.trace = 1.0
 
   def plot_graph(self, nodes, edges, layer_num):
-    # edges = graph_utils.gaussian_kernel(nodes, N=2*10**1)
+    edges = graph_utils.gaussian_kernel(nodes, N=2*10**1)
     eigvals = np.linalg.svd(edges, compute_uv=False)
     # Only use first nb_eigvals
     eigvals = eigvals[:self.nb_eigvals]
@@ -165,11 +169,23 @@ class Visualize_Kernel(Plot):
   def __init__(self, args, **kwargs):
     super(Visualize_Kernel, self).__init__(args)
 
+  def _print_kernel_stats(self, edges, nb_print=6):
+    def _log_info(size, size_type,  values):
+      logging.info("{} {} edge weight {}:".format(nb_print, size, size_type))
+      logging.info(values)
+    edge_sums = edges.sum(1)
+    sorted_idx = np.argsort(edge_sums)
+    _log_info("smallest", "row sums", edge_sums[sorted_idx[:nb_print]])
+    _log_info("smallest", "positions", sorted_idx[:nb_print])
+    _log_info("largest", "row sums", edge_sums[sorted_idx[-nb_print:]])
+    _log_info("largest", "positions", sorted_idx[-nb_print:])
+
   def plot_graph(self, nodes, edges, layer_num):
     name = "kernel_layer_{}.jpg".format(layer_num)
     #fileout = os.path.join(self.plot_dir, name)
     plt.imshow(edges)
     #scipy.misc.imsave(fileout, edges)
+    self._print_kernel_stats(edges)
     self._savefig(name)
     if layer_num==(self.nb_layers-1):
       self.epoch_finished()

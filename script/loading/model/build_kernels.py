@@ -44,6 +44,8 @@ def _get_kernel_class(kernel_name):
   elif kernel_name == 'Gaussian':
     kernel = general.Gaussian
     ker_kwargs['sigma'] = param.args.sigma
+  elif kernel_name == 'GaussianSoftmax':
+    kernel = general.GaussianSoftmax
   elif kernel_name == 'DirectedGaussian':
     kernel = general.DirectedGaussian
   elif kernel_name == 'MPNNdirected':

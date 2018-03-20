@@ -51,7 +51,7 @@ class GCNNSingleKernel(nn.Module):
 
         # Plot sample
         if plotting is not None:
-          plotting.plot_graph(emb_in.cpu().squeeze().t().data.numpy(), adj.cpu().squeeze().data.numpy(),0)
+          plotting.plot_graph(emb_in[0].cpu().t().data.numpy(), adj[0].cpu().data.numpy(),0)
 
         operators = gc.join_operators(adj, self.operators)
 
@@ -68,15 +68,23 @@ class GCNNSingleKernel(nn.Module):
             operators = gc.join_operators(adj, self.operators)
             # Plot updated representation
             if plotting is not None:
-              plotting.plot_graph(emb.cpu().squeeze().t().data.numpy(), adj.cpu().squeeze().data.numpy(),layer_idx)
+              plotting.plot_graph(emb[0].cpu().t().data.numpy(), adj[0].cpu().data.numpy(),layer_idx)
             # Apply graph convolution
             emb, _, _ = spatialnorm(emb)
             emb = resgconv(operators, emb)
 
         # collapse graph into a single representation (uncomment for different options)
-        emb = emb.mean(2)#.squeeze(2)
+        # emb = emb.mean(2)
         # emb = emb.sum(2)#.squeeze(2)
-        # emb = emb.max(2)[0].squeeze(2)
+        '''
+        emb = emb.sum(2)#.squeeze(2)
+        # Get mean of emb, accounting for zero padding of batches
+        batch_div_for_mean = batch_nb_nodes.unsqueeze(1).repeat(1,emb.size()[1])
+        emb = emb/batch_div_for_mean
+        '''
+        emb = emb.max(2)[0]
+
+        # Normalize for FCL
         emb = self.instance_norm(emb.unsqueeze(1)).squeeze(1)
         check_for_nan(emb, 'nan coming from instance_norm')
 

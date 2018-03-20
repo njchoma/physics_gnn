@@ -23,6 +23,7 @@ def pad_batch(X):
     sample_sizes[i] = sample.shape[1]
     largest_size = max(largest_size, sample_sizes[i])
 
+  # largest_size += 50
   pad_sizes = largest_size - sample_sizes 
   mask = np.zeros(shape=(nb_samples, largest_size, largest_size))
   # Pad samples with zeros

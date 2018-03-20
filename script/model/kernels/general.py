@@ -70,7 +70,7 @@ class Adj_Kernel(nn.Module):
     super(Adj_Kernel,self).__init__()
     self.sparse = sparse
 
-  def forward(self, args, **kwargs):
+  def forward(self, *args, **kwargs):
     raise Exception("Must be implemented by child class")
   
   def update(self, *args, **kwargs):
@@ -89,12 +89,12 @@ class Adj_Kernel_fixed_update(Adj_Kernel):
     return self.adj_matrix
 
 
-class Gaussian(Adj_Kernel):
+class Gaussian_prev(Adj_Kernel):
    def __init__(self,fmaps,sparse=None,sigma=2.0):
       super(Gaussian, self).__init__()
       self.sigma = sigma
 
-   def forward(self, adj_in, emb_in,idx):
+   def forward(self, adj_in, emb_in,*args, **kwargs):
       batch, fmap, nb_node = emb_in.size()
       # Normalize input coordinates
       coord = emb_in.div(emb_in.std())
@@ -176,7 +176,7 @@ class MLPdirected(Adj_Kernel):
       self.layer1 = nn.Linear(2*fmaps+1, nb_hidden)
       self.layer2 = nn.Linear(nb_hidden,1)
 
-   def forward(self, adj_in, emb_in, idx=None):
+   def forward(self, adj_in, emb_in, layer, *args, **kwargs):
       batch, fmap, nb_node = emb_in.size()
 
       adj_list = []
@@ -186,7 +186,7 @@ class MLPdirected(Adj_Kernel):
         # Create samples from emb_in s.t. an MLP will create
         # edges for every j,k node pair
         sum_weights = get_summed_weights(adj_in[i])
-        sample = make_samples(emb_in[i].transpose(0,1),sum_weights,idx)
+        sample = make_samples(emb_in[i].transpose(0,1),sum_weights,layer)
         # MLP is applied to every j,k vertex pair
         # to calculate new j,k edge weights
         edge_out = self.layer1(sample)
@@ -204,7 +204,7 @@ class Identity(Adj_Kernel_fixed_update):
   def __init__(self, *args, **kwargs):
     super(Identity, self).__init__()
 
-  def forward(self, adj_in, emb_in,idx):
+  def forward(self, adj_in, emb_in,*args, **kwargs):
     batches, features, nodes = emb_in.size()
     ones = torch.ones(nodes)
     if emb_in.is_cuda:
@@ -213,3 +213,78 @@ class Identity(Adj_Kernel_fixed_update):
     identity = Variable(identity)
     self.save_adj(identity)
     return identity
+
+################
+# Gaspar Kernels
+################
+import utils.tensor as ts
+
+def gaussian(sqdist, sigma):
+    var = sigma ** 2
+    adj = (-sqdist * var).exp()
+
+    return adj
+
+
+def _delete_diag(adj):
+    nb_node = adj.size()[1]
+    diag_mask = ts.make_tensor_as(adj, (nb_node, nb_node))
+    diag_mask = ts.variable_as(diag_mask, adj)
+    diag_mask = diag_mask.unsqueeze(0).expand_as(adj)
+    adj.masked_fill_(diag_mask, 0)
+
+    return adj
+
+
+'''
+def _stochastich(adj):
+  deg = adj.sum(2)
+  adj /= deg.expand_as(adj)
+
+  return adj
+'''
+
+def _softmax(dij, _softmax_fct):
+  batch = dij.size()[0]
+
+  dij = torch.unbind(dij, dim=0)
+  dij = torch.cat(dij, dim=0)
+
+  dij = _softmax_fct(dij)
+
+  dij = torch.chunk(dij, batch, dim=0)
+  dij = torch.stack(dij, dim=0)
+
+  return dij
+
+class Gaussian(Adj_Kernel):
+    """Gaussian kernel"""
+    def __init__(self, *args, diag=True, norm=False, periodic=False, **kwargs):
+        super(Gaussian, self).__init__()
+        sigma = Parameter(torch.rand(1) * 0.02 + 0.99)
+        self.register_parameter('sigma', sigma)  # Uniform on [0.9, 1.1]
+        self.diag = diag
+        self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
+
+    def _apply_norm(adj):
+      return adj
+
+    def forward(self, emb, *args, **kwargs):
+        """takes the exponential of squared distances"""
+
+        adj = gaussian(self.sqdist(emb), self.sigma)
+        if not self.diag:
+            adj = _delete_diag(adj)
+
+        adj = self._apply_norm(adj)
+        return adj
+
+class GaussianSoftmax(Gaussian):
+  def __init__(self, *args, diag=True, norm=False, periodic=False, **kwargs):
+    super(GaussianSoftmax, self).__init__(*args, diag=diag, norm=norm, periodic=periodic, **kwargs)
+    self._softmax_fct = nn.Softmax()
+
+  def _apply_norm(self, adj):
+    return _softmax(adj, self._softmax_fct)
+
+    
