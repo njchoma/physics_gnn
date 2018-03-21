@@ -75,14 +75,14 @@ class GCNNSingleKernel(nn.Module):
 
         # collapse graph into a single representation (uncomment for different options)
         # emb = emb.mean(2)
-        # emb = emb.sum(2)#.squeeze(2)
+        emb = emb.sum(2)#.squeeze(2)
         '''
         emb = emb.sum(2)#.squeeze(2)
         # Get mean of emb, accounting for zero padding of batches
         batch_div_for_mean = batch_nb_nodes.unsqueeze(1).repeat(1,emb.size()[1])
         emb = emb/batch_div_for_mean
         '''
-        emb = emb.max(2)[0]
+        # emb = emb.max(2)[0]
 
         # Normalize for FCL
         emb = self.instance_norm(emb.unsqueeze(1)).squeeze(1)

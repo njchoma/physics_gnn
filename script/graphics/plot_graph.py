@@ -104,11 +104,11 @@ class Spectral_Plot(Plot):
       self.epoch_finished()
 
   def plot_graph(self, nodes, edges, layer_num):
+    logging.info("Plotting layer {}".format(layer_num))
     edges = graph_utils.gaussian_kernel(nodes, N=2*10**1)
     edges_sum = edges.sum(axis=1)
     vk = Visualize_Kernel(self.args)
     vk.plot_graph(nodes, edges, layer_num-1)
-    logging.info("Plotting layer {}".format(layer_num))
     if (edges != edges.transpose()).any():
       logging.warning("Plotting asymetric matrix. Symmetrizing.")
       edges = 0.5*edges+0.5*edges.transpose()
@@ -169,10 +169,10 @@ class Visualize_Kernel(Plot):
   def __init__(self, args, **kwargs):
     super(Visualize_Kernel, self).__init__(args)
 
-  def _print_kernel_stats(self, edges, nb_print=6):
+  def _print_kernel_stats(self, edges, nb_print=5):
     def _log_info(size, size_type,  values):
-      logging.info("{} {} edge weight {}:".format(nb_print, size, size_type))
-      logging.info(values)
+      logging.info("  {} {} edge weight {}:".format(nb_print, size, size_type))
+      logging.info("    {}".format(values))
     edge_sums = edges.sum(1)
     sorted_idx = np.argsort(edge_sums)
     _log_info("smallest", "row sums", edge_sums[sorted_idx[:nb_print]])
