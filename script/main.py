@@ -13,19 +13,21 @@ def main():
     # Parse args
     args = ra.read_args()
 
-    # Set up logging
-    if (args.quiet):
-      logging_level = logging.WARNING
-    else:
-      logging_level = logging.INFO
-    logging.basicConfig(format='%(message)s',level=logging_level)
-    
     # Set up model directory
     project_root_dir = path.dirname(path.abspath(path.join(__file__, '..')))
     modelsdir = path.join(project_root_dir, 'models' + args.data)
     args.savedir = path.join(modelsdir, args.name)
     make_dir_if_not_there(args.savedir)
 
+    # Set up logging
+    logfile = path.join(args.savedir, "log.txt")
+    if (args.quiet):
+      logging_level = logging.WARNING
+    else:
+      logging_level = logging.INFO
+    logging.basicConfig(filename=logfile,format='%(message)s',level=logging_level)
+    logging.getLogger().addHandler(logging.StreamHandler())
+    
     # Set global model parameters
     # Restores model parameters if some training has already occurred
     param.init(args)

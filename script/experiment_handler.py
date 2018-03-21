@@ -15,6 +15,7 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
 
 
     net = build_model.make_net_if_not_there(param.args, param.args.first_fm, param.args.savedir)
+    logging.info(net)
 
     if param.args.cuda:
         net = net.cuda()
