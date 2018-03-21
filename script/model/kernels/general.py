@@ -257,7 +257,7 @@ def _softmax(dij, _softmax_fct):
 
   return dij
 
-class Gaussian(Adj_Kernel):
+class Gaussian(Adj_Kernel_fixed_update):
     """Gaussian kernel"""
     def __init__(self, *args, diag=True, norm=False, periodic=False, **kwargs):
         super(Gaussian, self).__init__()
