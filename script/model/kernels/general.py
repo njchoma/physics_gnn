@@ -64,30 +64,29 @@ def get_summed_weights(adj_in):
   return sum_weights
   
 
+def _save_adj_no_save(*args, **kwargs):
+  pass
+
+
 # Abstract adjacency kernel class
 class Adj_Kernel(nn.Module):
-  def __init__(self,sparse=None):
+  def __init__(self,sparse=None,layerwise=False):
     super(Adj_Kernel,self).__init__()
     self.sparse = sparse
+    if layerwise:
+      self.save_adj = _save_adj_no_save
+      self.update = self.forward
+    else:
+      self.save_adj = self._save_adj
+
+  def _save_adj(self, adj_in):
+    self.adj_matrix = adj_in
 
   def forward(self, *args, **kwargs):
     raise Exception("Must be implemented by child class")
   
   def update(self, *args, **kwargs):
-    return self.forward(*args, **kwargs)
-
-# Abstract adjacency kernel class
-# which keeps reuses first layer adj matrix
-class Adj_Kernel_fixed_update(Adj_Kernel):
-  def __init__(self):
-    super(Adj_Kernel_fixed_update,self).__init__()
-
-  def save_adj(self, adj_in):
-    self.adj_matrix = adj_in
-
-  def update(self, *args, **kwargs):
     return self.adj_matrix
-
 
 class Gaussian_prev(Adj_Kernel):
    def __init__(self,fmaps,sparse=None,sigma=2.0):
@@ -200,7 +199,7 @@ class MLPdirected(Adj_Kernel):
       adj = functional.sigmoid(adj)
       return adj
 
-class Identity(Adj_Kernel_fixed_update):
+class Identity(Adj_Kernel):
   def __init__(self, *args, **kwargs):
     super(Identity, self).__init__()
 
@@ -260,7 +259,7 @@ def _softmax(dij, _softmax_fct):
 class Gaussian(Adj_Kernel):
     """Gaussian kernel"""
     def __init__(self, *args, diag=True, norm=False, periodic=False, **kwargs):
-        super(Gaussian, self).__init__()
+        super(Gaussian, self).__init__(*args, **kwargs)
         sigma = Parameter(torch.rand(1) * 0.02 + 0.99)
         self.register_parameter('sigma', sigma)  # Uniform on [0.9, 1.1]
         self.diag = diag
@@ -277,6 +276,7 @@ class Gaussian(Adj_Kernel):
             adj = _delete_diag(adj)
 
         adj = self._apply_norm(adj)
+        self.save_adj(adj)
         return adj
 
 class GaussianSoftmax(Gaussian):

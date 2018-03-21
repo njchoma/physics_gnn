@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.nn import Parameter
 from torch.autograd import Variable
 
-from model.kernels.general import Adj_Kernel_fixed_update
+from model.kernels.general import Adj_Kernel
 import utils.tensor as ts
 
 
@@ -192,7 +192,7 @@ class ComplexGaussian(nn.Module):
         return (adj_r, adj_i)
     
 
-class QCDDist(Adj_Kernel_fixed_update):
+class QCDDist(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, fmaps, alpha, radius, periodic=False):
@@ -213,7 +213,7 @@ class QCDDist(Adj_Kernel_fixed_update):
         return adj_in
 
 
-class FixedQCDAware(Adj_Kernel_fixed_update):
+class FixedQCDAware(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, fmaps, alpha, beta, periodic=False, epsilon=1e-7):
@@ -241,7 +241,7 @@ class FixedQCDAware(Adj_Kernel_fixed_update):
         return adj_in
 
 
-class QCDAware(Adj_Kernel_fixed_update):
+class QCDAware(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, fmaps, alpha, beta, periodic=False):
@@ -316,7 +316,7 @@ class QCDAware(Adj_Kernel_fixed_update):
 
 
 
-class QCDAwareMeanNorm(Adj_Kernel_fixed_update):
+class QCDAwareMeanNorm(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, fmaps, alpha, beta, periodic=False):
@@ -387,7 +387,7 @@ class QCDAwareMeanNorm(Adj_Kernel_fixed_update):
         return dij
 
 
-class QCDAwareNoNorm(Adj_Kernel_fixed_update):
+class QCDAwareNoNorm(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, fmaps, alpha, beta, periodic=False):
@@ -440,7 +440,7 @@ class QCDAwareNoNorm(Adj_Kernel_fixed_update):
         return adj_in
 
 
-class QCDAwareOld(Adj_Kernel_fixed_update):
+class QCDAwareOld(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
     def __init__(self, alpha, beta, epsilon=1e-5):

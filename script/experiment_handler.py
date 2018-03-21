@@ -78,7 +78,7 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
       roc_test.plot_roc_curve()
       save_model(net)
 
-      logging.info("Epoch took {} seconds\n".format(int(time.time()-t0)))
+    logging.info("Epoch took {} seconds\n".format(int(time.time()-t0)))
 
 
 def print_epoch_info(epoch, name, loss, auc, invFpr):
