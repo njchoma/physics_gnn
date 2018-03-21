@@ -266,7 +266,7 @@ class Gaussian(Adj_Kernel):
         self.diag = diag
         self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
-    def _apply_norm(adj):
+    def _apply_norm(self, adj):
       return adj
 
     def forward(self, emb, *args, **kwargs):
