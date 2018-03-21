@@ -63,7 +63,7 @@ def train_net(net, X, y, w, criterion, optimizer):
         step_loss += loss.data[0]
 
         if (i + 1) % param.args.nbprint == 0:
-            logging.info('    {} : {}'.format(i + 1, step_loss / param.args.nbprint))
+            logging.info('    {} : {}'.format((i+1)*param.args.nb_batch, step_loss / param.args.nbprint))
             step_loss = 0
 
         loss.backward()
@@ -126,7 +126,7 @@ def test_net(net, X, y, w, criterion, roccurve):
         roccurve.update(out.data, ground_truth.data, weight.data)
 
         if (i + 1) % (5*param.args.nbprint) == 0:
-            logging.info('tested on {}'.format(i + 1))
+            logging.info('tested on {}'.format((i+1)*param.args.nb_batch))
 
     score = roccurve.score_auc()
     fpr50 = roccurve.score_fpr()
