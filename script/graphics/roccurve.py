@@ -2,7 +2,8 @@ from os.path import join
 import matplotlib; matplotlib.use('Agg')  # no display on clusters 
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score, roc_curve
-from torch.autograd import Variable
+
+import loading.model.model_parameters as param
 
 
 def _var2tensor(tensor):
@@ -39,68 +40,86 @@ def fpr_ppercent(tprs, fprs, p=0.5):
 
 
 def plot_roc_curve(gt, pred, weights, type_, save_path, model_name, zooms=None):
-    """plots the ROC curve. zooms is a list of maximum range for x"""
+  """plots the ROC curve. zooms is a list of maximum range for x"""
 
-    def _plot_roc_curve(roc, name='', xlim=[0, 1], ylim=[0, 1]):
-        # plot
-        plt.clf()
-        plt.figure(1)
-        plt.clf()
-        plt.title('{} ROC Curve {}'.format(type_, name))
-        plt.plot(roc["fpr"], roc["tpr"])
+  def _plot_roc_curve(roc, name='', xlim=[0, 1], ylim=[0, 1]):
+    # plot
+    plt.clf()
+    plt.figure(1)
+    plt.clf()
+    plt.title('{} ROC Curve {}'.format(type_, name))
+    plt.plot(roc["fpr"], roc["tpr"])
 
-        # zooms
-        plt.ylim(ylim)
-        plt.xlim(xlim)
+    # zooms
+    plt.ylim(ylim)
+    plt.xlim(xlim)
 
-        # legends & labels
-        plt.xlabel("False Positive Rate (1- BG rejection)")
-        plt.ylabel("True Positive Rate (Signal Efficiency)")
-        plt.grid(linestyle=':')
+    # legends & labels
+    plt.xlabel("False Positive Rate (1- BG rejection)")
+    plt.ylabel("True Positive Rate (Signal Efficiency)")
+    plt.grid(linestyle=':')
 
-        # save
-        filepath = join(save_path, '{}_roc_{}.png'.format(name, type_))
-        plt.savefig(filepath)
-        plt.clf()
+    # save
+    filepath = join(save_path, '{}_roc_{}.png'.format(name, type_))
+    plt.savefig(filepath)
+    plt.clf()
 
-    # signal preds
-    roc = roc_vals(gt, pred, weights)
-    fpr50 = fpr_ppercent(roc['tpr'], roc['fpr'], 0.5)
+  # signal preds
+  roc = roc_vals(gt, pred, weights)
+  if zooms is None:
+    _plot_roc_curve(roc, name=model_name)
+  else:
+    for i, zoom in enumerate(zooms):
+      _plot_roc_curve(roc, name=model_name + '_zoomed' + str(i), xlim=[0, zoom])
 
-    if zooms is None:
-        _plot_roc_curve(roc, name=model_name)
-    else:
-        for i, zoom in enumerate(zooms):
-            _plot_roc_curve(roc, name=model_name + '_zoomed' + str(i), xlim=[0, zoom])
 
-    return fpr50
+def _get_fpr(gt, pred, weights, p=0.5):
+  # signal preds
+  roc = roc_vals(gt, pred, weights)
+  fpr = fpr_ppercent(roc['tpr'], roc['fpr'], p)
+  return fpr
 
 
 class ROCCurve():
-    """ROC curve like statistics"""
+  """ROC curve like statistics"""
 
-    def __init__(self):
-        self.gt = []
-        self.pred = []
-        self.weights = []
+  def __init__(self, type_, zooms=[1.0], p=0.5):
+    self.zooms = zooms
+    self.type_ = type_
+    self.name = param.args.name
+    self.savedir = param.args.savedir
+    self.p = p
 
-    def update(self, output, label, weights=None):
-        """adds predictions to ROC curve buffer"""
+  def reset(self):
+    self.gt = []
+    self.pred = []
+    self.weights = []
 
-        self.gt.extend([int(l) for l in _var2tensor(label)])
-        self.pred.extend(_var2tensor(output))
-        if weights is not None:
-            self.weights.extend(_var2tensor(weights))
+  def update(self, output, label, weights=None):
+    """adds predictions to ROC curve buffer"""
 
-    def roc_score(self, is_weighted):
-        """returns Area Under Curve for data in buffer"""
+    self.gt.extend([int(l) for l in label])
+    self.pred.extend(output)
+    if weights is not None:
+      self.weights.extend(weights)
 
-        ground_truth = [int(l) for l in self.gt]
-        if is_weighted:
-            return roc_score(ground_truth, self.pred, self.weights)
-        return roc_score(ground_truth, self.pred, None)
+  def score_auc(self, is_weighted=True):
+    """returns Area Under Curve for data in buffer"""
 
-    def plot_roc_curve(self, name, type_, save_path, zooms=None):
-        ground_truth = [int(l) for l in self.gt]
-        fpr50 = plot_roc_curve(ground_truth, self.pred, self.weights, type_, save_path, name, zooms=zooms)
-        return fpr50
+    if is_weighted:
+      return roc_score(self.gt, self.pred, self.weights)
+    return roc_score(self.gt, self.pred, None)
+
+  def score_fpr(self):
+    fpr50 = _get_fpr(self.gt, self.pred, self.weights, self.p)
+    return fpr50
+
+  def plot_roc_curve(self):
+    plot_roc_curve(
+                    self.gt, 
+                    self.pred, 
+                    self.weights, 
+                    self.type_, 
+                    self.savedir, 
+                    self.name, 
+                    zooms=self.zooms)

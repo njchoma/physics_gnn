@@ -17,7 +17,7 @@ def get_one_model_stats(model_dir):
   stats['test_auc'] = best_run[4]
   stats['test_1/fpr'] = best_run[6]
   stats['nb_epoch'] = text.shape[0]
-  stats['best_epoch'] = best_run_idx
+  stats['best_epoch'] = best_run_idx+1 # Epoch number starts at 1
   return stats
 
 def write_one_model(f, model):

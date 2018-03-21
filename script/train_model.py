@@ -6,7 +6,6 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from graphics.roccurve import ROCCurve
 from graphics.plot_graph import construct_plot
 import loading.model.model_parameters as param
 import data_ops.batching as batching
@@ -75,20 +74,25 @@ def train_net(net, X, y, w, criterion, optimizer):
     return epoch_loss_avg
 
 
-def test_net(net, X, y, w, criterion, type_):
+def test_net(net, X, y, w, criterion, roccurve):
     """Tests the network, returns the ROC AUC and epoch loss"""
 
     # criterion = nn.BCELoss()
     logging.warning('testing on {} events'.format(len(y)))
     epoch_loss = 0
-    roccurve = ROCCurve()
+    roccurve.reset()
     net.eval()
 
+    '''
+    # Sort test batches by size which greatly reduces padded zeros
+    # Should have no effect on results, except it does
+    # (a lot, of course for the worse)
     batch_idx2 = batching.get_batches_for_testing(
                                       len(y), 
                                       param.args.nb_batch, 
                                       X
                                       )
+    '''
 
     batch_idx = batching.get_batches(
                                       len(y), 
@@ -119,13 +123,13 @@ def test_net(net, X, y, w, criterion, type_):
         out = net(jet, adj_mask, batch_nb_nodes)
         loss = criterion(out, ground_truth, weight)
         epoch_loss += loss.data[0]
-        roccurve.update(out, ground_truth, weight)
+        roccurve.update(out.data, ground_truth.data, weight.data)
 
-        if (i + 1) % 5000 == 0:
+        if (i + 1) % (5*param.args.nbprint) == 0:
             logging.info('tested on {}'.format(i + 1))
 
-    score = roccurve.roc_score(True)
-    fpr50 = roccurve.plot_roc_curve(param.args.name, type_, param.args.savedir, zooms=[1., 0.001, 0.0001])
+    score = roccurve.score_auc()
+    fpr50 = roccurve.score_fpr()
     epoch_loss /= len(batch_idx)
-    return score, epoch_loss, fpr50
+    return score, epoch_loss, fpr50, roccurve
 

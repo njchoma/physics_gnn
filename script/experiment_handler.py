@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import os.path as path
 
+from graphics.roccurve import ROCCurve
 import train_model as model
 from loading.model import build_model
 import loading.model.model_parameters as param
@@ -30,6 +31,11 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
   param.args.bestInvFpr = 0.0
   param.args.bestAuc = 0.0
 
+  # Set up roc plotting
+  zooms = [1., 0.01, 0.001]
+  roc_train = ROCCurve("train", zooms=zooms)
+  roc_test  = ROCCurve("test", zooms=zooms)
+
   for epoch in range(50):
     t0 = time.time()
     logging.info('\nLearning rate: {0:.3g}'.format(param.args.lrate))
@@ -39,11 +45,9 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
     param.args.lrate *= param.args.lrdecay
     logging.info(param.args.name+' loss epoch {} : {}'.format(epoch+1,epoch_loss_avg))
 
-    # Model performance on subset of training data
-    auc_train, loss_train, fpr_train = model.test_net(net, train_X[:param.args.nbtest], train_y[:param.args.nbtest], train_w[:param.args.nbtest], criterion, "train")
-
-    # Model performance on test data
-    auc_test, loss_test, fpr_test = model.test_net(net, test_X, test_y, test_w, criterion, "test")
+    # Model performance on subset of training data, test data
+    auc_train, loss_train, fpr_train, roc_train = model.test_net(net, train_X[:param.args.nbtest], train_y[:param.args.nbtest], train_w[:param.args.nbtest], criterion, roc_train)
+    auc_test, loss_test, fpr_test, roc_test = model.test_net(net, test_X, test_y, test_w, criterion, roc_test)
 
     # Log eval performance
     print_epoch_info(epoch, "train", loss_train, auc_train, (1/fpr_train))
@@ -63,12 +67,15 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
                     )
 
     # Save model if beat previous best
-    matchOrBeatFpr = ((1/(fpr_test+10**-20)) > param.args.bestInvFpr)
+    beatFpr = ((1/(fpr_test+10**-20)) > param.args.bestInvFpr)
+    matchFpr = ((1/(fpr_test+10**-20)) == param.args.bestInvFpr)
     beatAuc = (auc_test > param.args.bestAuc)
-    if matchOrBeatFpr or (matchOrBeatFpr and beatAuc):
+    if beatFpr or (matchFpr and beatAuc):
       logging.info("\nBeat previous best. Saving...")
       param.args.bestInvFpr = (1/(fpr_test+10**-20))
       param.args.bestAuc = auc_test
+      roc_train.plot_roc_curve()
+      roc_test.plot_roc_curve()
       save_model(net)
 
       logging.info("Epoch took {} seconds\n".format(int(time.time()-t0)))
