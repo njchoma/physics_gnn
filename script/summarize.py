@@ -94,7 +94,8 @@ def summarize_all_in_dir(models_dir):
     try:
       summarize_one_model_type(models_dir, model)
     except:
-      raise Exception("Summary already completed for {}".format(model))
+      print("Issue with {}".format(model))
+      continue
 
 if __name__ == "__main__":
   models_dir = '/home/nc2201/research/GCNN/modelsNYU'
