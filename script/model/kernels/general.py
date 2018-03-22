@@ -169,8 +169,8 @@ class MPNNdirected(Adj_Kernel):
 
 
 class MLPdirected(Adj_Kernel):
-   def __init__(self,fmaps,nb_hidden,sparse=None):
-      super(MLPdirected, self).__init__(sparse)
+   def __init__(self,fmaps,nb_hidden, *args,sparse=None, **kwargs):
+      super(MLPdirected, self).__init__(sparse, *args, **kwargs)
       self.fmaps = fmaps
       self.layer1 = nn.Linear(2*fmaps+1, nb_hidden)
       self.layer2 = nn.Linear(nb_hidden,1)
@@ -197,6 +197,7 @@ class MLPdirected(Adj_Kernel):
       # Apply sigmoid to normalize edge weights
       adj = torch.cat(tuple(adj_list),0)
       adj = functional.sigmoid(adj)
+      self.save_adj(adj)
       return adj
 
 class Identity(Adj_Kernel):
