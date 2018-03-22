@@ -70,7 +70,7 @@ def _save_adj_no_save(*args, **kwargs):
 
 # Abstract adjacency kernel class
 class Adj_Kernel(nn.Module):
-  def __init__(self,sparse=None,layerwise=False):
+  def __init__(self,*args,sparse=None,layerwise=False,**kwargs):
     super(Adj_Kernel,self).__init__()
     self.sparse = sparse
     if layerwise:

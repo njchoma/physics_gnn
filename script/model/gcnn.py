@@ -45,7 +45,7 @@ class GCNNSingleKernel(nn.Module):
         adj_matrices = [kernel(adj, emb_in, layer=0, mask=adj_mask, batch_nb_nodes=batch_nb_nodes) for kernel in self.kernels[0]]
         adj = self.combine_kernels[0](adj, adj_matrices)
         
-        if adj_mask is not None:
+        if batch_size != 1:
           adj = torch.mul(adj, adj_mask)
         check_for_nan(adj, 'NAN in operators')
 
@@ -63,7 +63,7 @@ class GCNNSingleKernel(nn.Module):
             # Apply message passing to adjacency matrix
             adj_matrices = [kernel.update(adj, emb, layer=layer_idx, mask=adj_mask,batch_nb_nodes=batch_nb_nodes) for kernel in self.kernels[layer_idx]]
             adj = self.combine_kernels[layer_idx](adj, adj_matrices)
-            if adj_mask is not None:
+            if batch_size != 1:
               adj = torch.mul(adj, adj_mask)
             operators = gc.join_operators(adj, self.operators)
             # Plot updated representation
