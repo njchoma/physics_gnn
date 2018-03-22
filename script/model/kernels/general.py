@@ -24,32 +24,20 @@ def cartesian(tensor):
    [3 4 5 0 1 2],
    [3 4 5 3 4 5]]
   '''
-  n_repeats, dim2 = tensor.size()[0:2]
-  a = tensor.repeat(1,n_repeats)
-  a = a.resize(n_repeats*n_repeats,dim2)
-  b = tensor.repeat(n_repeats,1)
-  return torch.cat((a,b),1)
+  batch, nb_node, fmap = tensor.size()
+  a = tensor.repeat(1,1,nb_node).resize(batch, nb_node*nb_node, fmap)
+  b = tensor.repeat(1,nb_node,1)
+  return torch.cat((a,b),2)
 
-def _get_adj(tensor,adj_size):
-  '''
-  If tensor is 4x1 tensor
-  [[11], [12], [21], [22]]
-  returns 2x2 tensor
-  [[11 12],
-   [21 22]]
-  '''
-  return tensor.resize(adj_size, adj_size)
+def _batch_unbind(adj):
+  adj_unbind = torch.unbind(adj, dim=0)
+  return torch.cat(adj_unbind, dim=0)
 
 
-def make_samples(emb_in,sum_weights,idx):
-  '''
-  Assumes emb_in is of shape nb_nodes x fmap
-  '''
-  nb_node = emb_in.size()[0]
-  sample = cartesian(emb_in)
-  weights = sum_weights.resize(nb_node,1).repeat(nb_node,1)
-  sample = torch.cat((sample,weights),1)
-  return sample
+def _batch_bind(adj_unbind, nb_batch):
+  adj = torch.chunk(adj_unbind, nb_batch, dim=0)
+  return torch.stack(adj, dim=0)
+
 
 def get_summed_weights(adj_in):
   # Assume adj_in is shape nb_node x nb_node
@@ -172,31 +160,20 @@ class MLPdirected(Adj_Kernel):
    def __init__(self,fmaps,nb_hidden, *args,sparse=None, **kwargs):
       super(MLPdirected, self).__init__(sparse, *args, **kwargs)
       self.fmaps = fmaps
-      self.layer1 = nn.Linear(2*fmaps+1, nb_hidden)
+      self.layer1 = nn.Linear(2*fmaps, nb_hidden)
       self.layer2 = nn.Linear(nb_hidden,1)
 
    def forward(self, adj_in, emb_in, layer, *args, **kwargs):
       batch, fmap, nb_node = emb_in.size()
-
-      adj_list = []
-      # Define an adjacency matrix for every
-      # sample in the batch
-      for i in range(batch):
-        # Create samples from emb_in s.t. an MLP will create
-        # edges for every j,k node pair
-        sum_weights = get_summed_weights(adj_in[i])
-        sample = make_samples(emb_in[i].transpose(0,1),sum_weights,layer)
-        # MLP is applied to every j,k vertex pair
-        # to calculate new j,k edge weights
-        edge_out = self.layer1(sample)
-        edge_out = functional.relu(edge_out)
-        edge_out = self.layer2(edge_out)
-        # Copy output of MLP into adj matrix
-        # for every j,k pair as previously defined in sparse class
-        adj_list.append(_get_adj(edge_out,nb_node).unsqueeze(0))
-      # Apply sigmoid to normalize edge weights
-      adj = torch.cat(tuple(adj_list),0)
-      adj = functional.sigmoid(adj)
+      # Convert out of batches
+      emb_cartesian = cartesian(emb_in.transpose(1,2))
+      # Apply MLP
+      edge_out = self.layer1(_batch_unbind(emb_cartesian))
+      edge_out = functional.relu(edge_out)
+      edge_out = self.layer2(edge_out).resize(batch*nb_node, nb_node)
+      edge_out = functional.sigmoid(edge_out)
+      # Return to batch sizes
+      adj = _batch_bind(edge_out, batch)
       self.save_adj(adj)
       return adj
 
