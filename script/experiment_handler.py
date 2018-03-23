@@ -71,12 +71,13 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
     matchFpr = ((1/(fpr_test+10**-20)) == param.args.bestInvFpr)
     beatAuc = (auc_test > param.args.bestAuc)
     if beatFpr or (matchFpr and beatAuc):
-      logging.info("\nBeat previous best. Saving...")
+      logging.info("\nBeat previous best. Updating...")
       param.args.bestInvFpr = (1/(fpr_test+10**-20))
       param.args.bestAuc = auc_test
       roc_train.plot_roc_curve()
       roc_test.plot_roc_curve()
-      save_model(net)
+      if (param.args.save_best_model):
+        save_model(net)
 
     logging.info("Epoch took {} seconds\n".format(int(time.time()-t0)))
 
