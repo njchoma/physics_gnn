@@ -234,6 +234,17 @@ def _softmax(dij, _softmax_fct):
 
   return dij
 
+def _softmax_with_padding(adj_in, batch_nb_nodes):
+  exp = adj_in.exp()
+  summed_exp = exp.sum(2)
+  # Remove padded nodes from sum
+  padding_correction = adj_in.size()[1]-batch_nb_nodes
+  padding_correction = padding_correction.unsqueeze(1).expand_as(summed_exp)
+  summed_exp = summed_exp-torch.mul(padding_correction, exp[:,-1])
+  # Apply softmax
+  return exp / summed_exp.unsqueeze(2).expand_as(exp)
+
+
 class Gaussian(Adj_Kernel):
     """Gaussian kernel"""
     def __init__(self, *args, diag=True, norm=False, periodic=False, **kwargs):
@@ -243,26 +254,25 @@ class Gaussian(Adj_Kernel):
         self.diag = diag
         self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
-    def _apply_norm(self, adj):
+    def _apply_norm(self, adj, batch_nb_nodes):
       return adj
 
-    def forward(self, emb, *args, **kwargs):
+    def forward(self, adj_in, emb, *args, batch_nb_nodes = None, **kwargs):
         """takes the exponential of squared distances"""
 
         adj = gaussian(self.sqdist(emb), self.sigma)
         if not self.diag:
             adj = _delete_diag(adj)
 
-        adj = self._apply_norm(adj)
+        adj = self._apply_norm(adj, batch_nb_nodes)
         self.save_adj(adj)
         return adj
 
 class GaussianSoftmax(Gaussian):
   def __init__(self, *args, diag=True, norm=False, periodic=False, **kwargs):
     super(GaussianSoftmax, self).__init__(*args, diag=diag, norm=norm, periodic=periodic, **kwargs)
-    self._softmax_fct = nn.Softmax()
 
-  def _apply_norm(self, adj):
-    return _softmax(adj, self._softmax_fct)
+  def _apply_norm(self, adj, batch_nb_nodes):
+    return _softmax_with_padding(adj, batch_nb_nodes)
 
     
