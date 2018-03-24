@@ -338,7 +338,9 @@ class QCDAwareMeanNorm(Adj_Kernel):
         ts.check_for_nan(self.beta, 'nan in kernel param : beta')
 
         sqdist = self.sqdist(emb)
+        '''
         ts.check_for_inf(sqdist, 'inf in kernel : sqdist')
+        '''
         momentum = emb[:, 4, :]
         mean_momentum = momentum.sum(1,keepdim=True)
         mean_momentum = torch.div(mean_momentum, batch_nb_nodes.unsqueeze(1))
@@ -351,7 +353,9 @@ class QCDAwareMeanNorm(Adj_Kernel):
         pow_momenta = (2 * alpha * (momentum+10**-20).log()).exp()
         # ts.check_for_nan(pow_momenta, 'NAN in kernel : pow_momenta')
         min_momenta = ts.sym_min(pow_momenta)
+        '''
         min_momenta.register_hook(ts.HookCheckForNan('NAN in backward min_momenta', action=print))
+        '''
         min_momenta = min_momenta.unsqueeze(1).repeat(1, nb_node, 1)
         d_ij_alpha = sqdist * min_momenta
         # d_ij_alpha.register_hook(ts.HookCheckForNan('NAN in backward d_ij_alpha', action=print))
