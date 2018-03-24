@@ -349,27 +349,30 @@ class QCDAwareMeanNorm(Adj_Kernel):
         # alpha.register_hook(_hook_reduce_grad(100))
         # Need to add small amt to momentum to prevent nan in backward pass
         pow_momenta = (2 * alpha * (momentum+10**-20).log()).exp()
-        ts.check_for_nan(pow_momenta, 'NAN in kernel : pow_momenta')
+        # ts.check_for_nan(pow_momenta, 'NAN in kernel : pow_momenta')
         min_momenta = ts.sym_min(pow_momenta)
         min_momenta.register_hook(ts.HookCheckForNan('NAN in backward min_momenta', action=print))
         min_momenta = min_momenta.unsqueeze(1).repeat(1, nb_node, 1)
         d_ij_alpha = sqdist * min_momenta
-        d_ij_alpha.register_hook(ts.HookCheckForNan('NAN in backward d_ij_alpha', action=print))
-        ts.check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
+        # d_ij_alpha.register_hook(ts.HookCheckForNan('NAN in backward d_ij_alpha', action=print))
+        # ts.check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
 
         beta = (self.beta ** 2).expand_as(d_ij_alpha)
+        '''
         beta.register_hook(ts.HookCheckForNan(
             'NAN in backward beta**2', action=print, args=('d_ij_center : {}'.format(d_ij_alpha),)))
+        '''
         # beta.register_hook(_hook_reduce_grad(100))
         d_ij_norm = - beta * d_ij_alpha
-        d_ij_norm.register_hook(ts.HookCheckForNan('NAN in backward d_ij_norm', action=print))
-        ts.check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
+        # d_ij_norm.register_hook(ts.HookCheckForNan('NAN in backward d_ij_norm', action=print))
+        # ts.check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
         d_ij_norm = d_ij_norm * mask
         w_ij = _softmax_with_padding(d_ij_norm, batch_nb_nodes)
         # w_ij = d_ij_norm.exp()
 
         # Save adj matrix for later layers
         self.save_adj(w_ij)
+        # w_ij.register_hook(ts.HookCheckForNan('NAN in backward w_ij', action=print))
         return w_ij
 
 

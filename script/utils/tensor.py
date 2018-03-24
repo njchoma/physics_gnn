@@ -10,7 +10,7 @@ def mean_with_padding(tensor, batch_nb_nodes, mask):
   # Get mean of tensor, accounting for zero padding of batches
   summed = mask_embedding(tensor, mask).sum(2)
   batch_div_by = batch_nb_nodes.unsqueeze(1).repeat(1,tensor.size()[1])
-  return summed / batch_div_by
+  return summed / (batch_div_by+10**-20)
 
 def variable_as(tensor1, tensor2):
     """Makes tensor1 a Variable depending on tensor2"""
@@ -111,11 +111,8 @@ def spatialnorm(emb, batch_nb_nodes, adj_mask):
     avg = mean_with_padding(emb, batch_nb_nodes, adj_mask)
     emb_centered = emb - avg.unsqueeze(2).expand_as(emb)
 
-    var = mean_with_padding(emb_centered ** 2, batch_nb_nodes, adj_mask)
-    var_protect = (var == 0).type_as(var)
-    if isinstance(var, Variable):
-        var_protect = var_protect.detach()
-    emb_norm = emb_centered / (10**-20+var.sqrt() + var_protect).unsqueeze(2).expand_as(emb_centered)
+    var = 10**-20+mean_with_padding(emb_centered ** 2, batch_nb_nodes, adj_mask)
+    emb_norm = emb_centered / var.sqrt().unsqueeze(2).expand_as(emb_centered)
 
     return emb_norm, avg, var
 

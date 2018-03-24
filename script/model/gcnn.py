@@ -8,6 +8,7 @@ from model import operators as op
 from model import multi_operators as ops
 from model import graphconv as gc
 from utils.tensor import spatialnorm, check_for_nan, mean_with_padding, mask_embedding
+import utils.tensor as ts
 
 
 class GCNNSingleKernel(nn.Module):
@@ -47,7 +48,7 @@ class GCNNSingleKernel(nn.Module):
         
         if batch_size != 1:
           adj = torch.mul(adj, adj_mask)
-        check_for_nan(adj, 'NAN in operators')
+        # check_for_nan(adj, 'NAN in operators')
 
         # Plot sample
         if plotting is not None:
@@ -56,7 +57,7 @@ class GCNNSingleKernel(nn.Module):
         operators = gc.join_operators(adj, self.operators)
 
         # apply Graph Conv
-        emb = self.fst_gconv(operators, emb_in, batch_nb_nodes, adj_mask, 0)
+        emb = self.fst_gconv(operators, emb_in, batch_nb_nodes, adj_mask)
         # Apply remaining Graph Convs
         for i, resgconv in enumerate(self.resgconvs):
             layer_idx = i+1
@@ -71,7 +72,7 @@ class GCNNSingleKernel(nn.Module):
               plotting.plot_graph(emb[0].cpu().t().data.numpy(), adj[0].cpu().data.numpy(),layer_idx)
             # Apply graph convolution
             emb, _, _ = spatialnorm(emb, batch_nb_nodes, adj_mask)
-            emb = resgconv(operators, emb, batch_nb_nodes, adj_mask, layer_idx)
+            emb = resgconv(operators, emb, batch_nb_nodes, adj_mask)
 
         # collapse graph into a single representation (uncomment for different options)
         # emb = emb.mean(2)
@@ -87,15 +88,10 @@ class GCNNSingleKernel(nn.Module):
 
         # Normalize for FCL
         emb = self.instance_norm(emb.unsqueeze(1)).squeeze(1)
-        check_for_nan(emb, 'nan coming from instance_norm')
 
         # logistic regression
         emb = self.fcl(emb).squeeze(1)
         emb = sigmoid(emb)
-        check_for_nan(emb, 'nan coming from logistic regression')
-
-        if (emb != emb).data.sum() > 0:
-            print('WARNING : NAN')
 
         return emb
 
