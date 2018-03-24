@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.nn import Parameter
 from torch.autograd import Variable
 
-from model.kernels.general import Adj_Kernel
+from model.kernels.general import Adj_Kernel, _softmax_with_padding
 import utils.tensor as ts
 
 
@@ -330,7 +330,6 @@ class QCDAwareMeanNorm(Adj_Kernel):
         self.beta.register_hook(ts.HookCheckForNan('NAN in backward beta',
                                                    action=print, args=self.beta))
 
-        self.softmax = nn.Softmax()
         self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
     def forward(self, adj_in, emb, mask, batch_nb_nodes, *args, **kwargs):
@@ -366,25 +365,12 @@ class QCDAwareMeanNorm(Adj_Kernel):
         d_ij_norm.register_hook(ts.HookCheckForNan('NAN in backward d_ij_norm', action=print))
         ts.check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
         d_ij_norm = d_ij_norm * mask
-        w_ij = self._softmax(d_ij_norm)
+        w_ij = _softmax_with_padding(d_ij_norm, batch_nb_nodes)
         # w_ij = d_ij_norm.exp()
 
         # Save adj matrix for later layers
         self.save_adj(w_ij)
         return w_ij
-
-    def _softmax(self, dij):
-        batch = dij.size()[0]
-
-        dij = torch.unbind(dij, dim=0)
-        dij = torch.cat(dij, dim=0)
-
-        dij = self.softmax(dij)
-
-        dij = torch.chunk(dij, batch, dim=0)
-        dij = torch.stack(dij, dim=0)
-
-        return dij
 
 
 class QCDAwareNoNorm(Adj_Kernel):
