@@ -16,6 +16,7 @@ def read_args():
     add_arg('--quiet', dest='quiet', help='reduces print', action='store_true')
     add_arg('--plot', dest='plot', help='type of plotting to perform',type=str,default=None)
     add_arg('--save_best_model', dest='save_best_model', help='saves best model based upon test 1/FPR',action='store_true')
+    add_arg('--tpr_target', dest='tpr_target', help='Sets TPR score at which 1/FPR is evaluated',type=float,default=0.5)
 
     # Kernel-specific
     add_arg('--kernels', dest='kernels', help='List of kernels. Add \'-layerwise\' to kernel name to create one kernel instance per layer. E.g. \'MLPDirected-layerwise\'', default='Gaussian',nargs='+')

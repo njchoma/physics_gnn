@@ -1,3 +1,4 @@
+import logging
 from os.path import join
 import matplotlib; matplotlib.use('Agg')  # no display on clusters 
 import matplotlib.pyplot as plt
@@ -88,7 +89,11 @@ class ROCCurve():
     self.type_ = type_
     self.name = param.args.name
     self.savedir = param.args.savedir
-    self.p = p
+    try:
+      self.p = param.args.tpr_target
+    except:
+      self.p = p
+    logging.warning("{} 1/FPR to be evaluated at {} TPR".format(self.name, self.p))
 
   def reset(self):
     self.gt = []

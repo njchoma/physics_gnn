@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=GCNN
-# SBATCH --output=slurm_out/GCNN_%j_%a.out
+#SBATCH --output=slurm_out/GCNN_%A_%a.out
 # SBATCH --error=GPUTFtest.err
 #SBATCH --time=2-00:00:00
 #SBATCH --gres gpu:1
@@ -16,27 +16,34 @@
 #########
 DATASET="NYU"
 NBTRAIN=100000
-# NBTEST=$NBTRAIN
-NBTEST=10500
+NBTEST=$NBTRAIN
+# NBTEST=10500
 
 ##################
 # MODEL PARAMETERS
 ##################
 NBBATCH=100
 NBFMAP=64
-NBLAYER=6
+NBLAYER=8
 LRATE=0.005
+LRDECAY=0.96
+OPTIONS="--cuda"
+
+###################
+# KERNEL PARAMETERS
+###################
 KERNELS="QCDAwareMeanNorm"
 CMBKER="Fixed_Balanced"
+NBHIDDEN=4 # only applies with MLPdirected kernel
 
-JOBNAME="qcd_smTest_""$NBFMAP""_""$NBLAYER""_""$SLURM_ARRAY_TASK_ID"
+JOBNAME="qcd_flTest_""$LRATE""_""$LRDECAY""_""$NBFMAP""_""$NBLAYER""_""$SLURM_ARRAY_TASK_ID"
 
-################
-# FIXED (mostly)
-################
+#############
+# FIXED INPUT
+#############
 NBPRINT=$((($NBTRAIN/$NBBATCH)/10))
 NBPRINT=$(($NBPRINT>1?$NBPRINT:1))
-PYARGS="--name $JOBNAME --kernels $KERNELS --nb_batch $NBBATCH --combine_kernels $CMBKER --data $DATASET --fm $NBFMAP --depth $NBLAYER --nb_MLPadj_hidden 4 --nbtrain $NBTRAIN --nbtest $NBTEST --nbprint $NBPRINT --lr $LRATE --lrdecay 0.9 --cuda"
+PYARGS="--name $JOBNAME --kernels $KERNELS --nb_batch $NBBATCH --combine_kernels $CMBKER --data $DATASET --fm $NBFMAP --depth $NBLAYER --nb_MLPadj_hidden $NBHIDDEN --nbtrain $NBTRAIN --nbtest $NBTEST --nbprint $NBPRINT --lr $LRATE --lrdecay $LRDECAY"
 
 
 # Network using a single kernel as described in "QCD-Aware Recursive Neural Networks for Jet Physics"

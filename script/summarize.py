@@ -1,5 +1,6 @@
-import numpy as np
 import os
+import argparse
+import numpy as np
 
 '''
 Summarize all models in a folder if not already completed
@@ -97,6 +98,14 @@ def summarize_all_in_dir(models_dir):
       print("Issue with {}".format(model))
       continue
 
+def read_args():
+  parser = argparse.ArgumentParser(description='Module to summarize training GCNN training runs')
+  add_arg = parser.add_argument
+
+  add_arg('--path',dest='path',help='File path to trained models directory',required=True)
+  return parser.parse_args()
+
 if __name__ == "__main__":
   models_dir = '/home/nc2201/research/GCNN/modelsNYU'
-  summarize_all_in_dir(models_dir)
+  args = read_args()
+  summarize_all_in_dir(args.path)

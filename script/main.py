@@ -50,7 +50,8 @@ def main():
         param.args.first_fm = 5
     elif param.args.data == 'ICECUBE':
         from loading.data.icecube.load_data import load_raw_data
-        datadir = '/global/homes/n/njchoma/data/njc_data'
+        # datadir = '/global/homes/n/njchoma/data/njc_data'
+        datadir = '/home/nc2201/data/icecube'
         trainfile = 'train.pickle'
         testfile  = 'test.pickle'
         train_X, train_y, train_w = load_raw_data(path.join(datadir,trainfile), param.args.nbtrain)
