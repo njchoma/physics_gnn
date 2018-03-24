@@ -242,7 +242,7 @@ def _softmax_with_padding(adj_in, batch_nb_nodes):
   padding_correction = padding_correction.unsqueeze(1).expand_as(summed_exp)
   summed_exp = summed_exp-torch.mul(padding_correction, exp[:,-1])
   # Apply softmax
-  return exp / summed_exp.unsqueeze(2).expand_as(exp)
+  return exp / (summed_exp+10**-20).unsqueeze(2).expand_as(exp)
 
 
 class Gaussian(Adj_Kernel):

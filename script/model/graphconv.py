@@ -4,7 +4,7 @@ from torch.nn import Parameter
 import torch.nn as nn
 import torch.nn.init
 from torch.nn.functional import relu
-from utils.tensor import check_for_nan
+from utils.tensor import check_for_nan, mean_with_padding
 
 
 def join_operators(adj, operator_iter):
@@ -56,7 +56,7 @@ class GraphOpConv(nn.Module):
         nn.init.uniform(bias, -invsqrt2, invsqrt2)
         self.register_parameter('bias', Parameter(bias))
 
-    def forward(self, ops, emb_in):
+    def forward(self, ops, emb_in, batch_nb_nodes, adj_mask):
         """Defines the computation performed at every call.
         Computes graph convolution with graph operators `ops`,
         on embedding `emb_in`
@@ -64,7 +64,7 @@ class GraphOpConv(nn.Module):
 
         batch_size, _, nb_node = emb_in.size()
 
-        avg = emb_in.mean().expand_as(emb_in)
+        avg = mean_with_padding(emb_in.clone(), batch_nb_nodes, adj_mask).unsqueeze(2).expand_as(emb_in)
         if ops is None:  # permutation invariant kernel
             spread = (emb_in, avg,)
         else:
@@ -107,11 +107,11 @@ class ResGOpConv(nn.Module):
         self.gconv_lin = GraphOpConv(in_fm, half_out_fm, nb_op)
         self.gconv_nlin = GraphOpConv(in_fm, half_out_fm, nb_op)
 
-    def forward(self, ops, emb_in):
-        linear = self.gconv_lin(ops, emb_in)
+    def forward(self, ops, emb_in, batch_nb_nodes, adj_mask):
+        linear = self.gconv_lin(ops, emb_in, batch_nb_nodes, adj_mask)
         check_for_nan(linear, 'NAN in resgconv : linear')
 
-        nlinear = self.gconv_nlin(ops, emb_in)
+        nlinear = self.gconv_nlin(ops, emb_in, batch_nb_nodes, adj_mask)
         check_for_nan(nlinear, 'NAN in resgconv : nlinear')
         nlinear = relu(nlinear)
 

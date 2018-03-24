@@ -1,5 +1,6 @@
 import logging
 import time
+import numpy as np
 from os.path import exists
 import pickle
 import torch
@@ -28,7 +29,6 @@ def train_net(net, X, y, w, criterion, optimizer):
     for i, idx in enumerate(batch_idx):
         optimizer.zero_grad()
 
-        import numpy as np
         # X = [np.random.randint(0, 10, size=(6,3))]
         # X = [np.random.randint(0,3,size=(6,2)), np.random.randint(0, 10, size=(6,3))]
         batch_X, adj_mask, batch_nb_nodes = batching.pad_batch([X[s] for s in idx])
@@ -83,11 +83,10 @@ def test_net(net, X, y, w, criterion, roccurve):
     roccurve.reset()
     net.eval()
 
-    '''
     # Sort test batches by size which greatly reduces padded zeros
     # Should have no effect on results, except it does
     # (a lot, of course for the worse)
-    batch_idx2 = batching.get_batches_for_testing(
+    batch_idx = batching.get_batches_for_testing(
                                       len(y), 
                                       param.args.nb_batch, 
                                       X
@@ -98,9 +97,15 @@ def test_net(net, X, y, w, criterion, roccurve):
                                       len(y), 
                                       param.args.nb_batch, 
                                       )
+    '''
+    # X0 = [np.random.randint(-2,3,size=(6,2)), np.random.randint(0, 10, size=(6,3))]
 
     
     for i, idx in enumerate(batch_idx):
+        # idx = [0,1]
+        # X = [X0[0], np.zeros((6, i+2))]
+        # idx = idxt
+        # idx[0] = 0
         batch_X, adj_mask, batch_nb_nodes = batching.pad_batch([X[s] for s in idx])
         batch_y = [int(y[s]) for s in idx]
         batch_w = [w[s] for s in idx]

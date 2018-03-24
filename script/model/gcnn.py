@@ -7,7 +7,7 @@ from torch.nn.functional import sigmoid
 from model import operators as op
 from model import multi_operators as ops
 from model import graphconv as gc
-from utils.tensor import spatialnorm, check_for_nan
+from utils.tensor import spatialnorm, check_for_nan, mean_with_padding, mask_embedding
 
 
 class GCNNSingleKernel(nn.Module):
@@ -56,7 +56,7 @@ class GCNNSingleKernel(nn.Module):
         operators = gc.join_operators(adj, self.operators)
 
         # apply Graph Conv
-        emb = self.fst_gconv(operators, emb_in)
+        emb = self.fst_gconv(operators, emb_in, batch_nb_nodes, adj_mask, 0)
         # Apply remaining Graph Convs
         for i, resgconv in enumerate(self.resgconvs):
             layer_idx = i+1
@@ -70,11 +70,12 @@ class GCNNSingleKernel(nn.Module):
             if plotting is not None:
               plotting.plot_graph(emb[0].cpu().t().data.numpy(), adj[0].cpu().data.numpy(),layer_idx)
             # Apply graph convolution
-            emb, _, _ = spatialnorm(emb)
-            emb = resgconv(operators, emb)
+            emb, _, _ = spatialnorm(emb, batch_nb_nodes, adj_mask)
+            emb = resgconv(operators, emb, batch_nb_nodes, adj_mask, layer_idx)
 
         # collapse graph into a single representation (uncomment for different options)
         # emb = emb.mean(2)
+        emb = mask_embedding(emb, adj_mask)
         emb = emb.sum(2)#.squeeze(2)
         '''
         emb = emb.sum(2)#.squeeze(2)

@@ -2,6 +2,15 @@ import torch
 from torch.autograd import Variable
 from math import pi
 
+def mask_embedding(tensor, mask):
+  nb_node = tensor.size()[1]
+  return torch.mul(tensor,mask[:,0:1].repeat(1,nb_node, 1))
+
+def mean_with_padding(tensor, batch_nb_nodes, mask):
+  # Get mean of tensor, accounting for zero padding of batches
+  summed = mask_embedding(tensor, mask).sum(2)
+  batch_div_by = batch_nb_nodes.unsqueeze(1).repeat(1,tensor.size()[1])
+  return summed / batch_div_by
 
 def variable_as(tensor1, tensor2):
     """Makes tensor1 a Variable depending on tensor2"""
@@ -86,7 +95,7 @@ def sqdist_periodic_(emb):
 
 
 
-def spatialnorm(emb):
+def spatialnorm(emb, batch_nb_nodes, adj_mask):
     """Normalisation layer : each feature map is modified to have
     mean 0 and variance 1.
 
@@ -99,14 +108,14 @@ def spatialnorm(emb):
                 size (batch, fm, 1)
     """
 
-    avg = emb.mean(2)
+    avg = mean_with_padding(emb, batch_nb_nodes, adj_mask)
     emb_centered = emb - avg.unsqueeze(2).expand_as(emb)
 
-    var = (emb_centered ** 2).mean(2)
+    var = mean_with_padding(emb_centered ** 2, batch_nb_nodes, adj_mask)
     var_protect = (var == 0).type_as(var)
     if isinstance(var, Variable):
         var_protect = var_protect.detach()
-    emb_norm = emb_centered / (var.sqrt() + var_protect).unsqueeze(2).expand_as(emb_centered)
+    emb_norm = emb_centered / (10**-20+var.sqrt() + var_protect).unsqueeze(2).expand_as(emb_centered)
 
     return emb_norm, avg, var
 
