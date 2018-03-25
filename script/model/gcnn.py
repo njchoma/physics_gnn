@@ -72,6 +72,7 @@ class GCNNSingleKernel(nn.Module):
               plotting.plot_graph(emb[0].cpu().t().data.numpy(), adj[0].cpu().data.numpy(),layer_idx)
             # Apply graph convolution
             emb, _, _ = spatialnorm(emb, batch_nb_nodes, adj_mask)
+            emb = mask_embedding(emb, adj_mask)
             emb = resgconv(operators, emb, batch_nb_nodes, adj_mask)
 
         # collapse graph into a single representation (uncomment for different options)

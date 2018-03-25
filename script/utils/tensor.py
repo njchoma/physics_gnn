@@ -7,6 +7,7 @@ def mask_embedding(tensor, mask):
   return torch.mul(tensor,mask[:,0:1].repeat(1,nb_node, 1))
 
 def mean_with_padding(tensor, batch_nb_nodes, mask):
+  check_for_inf(tensor, "inf in tensor")
   # Get mean of tensor, accounting for zero padding of batches
   summed = mask_embedding(tensor, mask).sum(2)
   batch_div_by = batch_nb_nodes.unsqueeze(1).repeat(1,tensor.size()[1])
