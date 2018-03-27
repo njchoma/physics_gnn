@@ -319,7 +319,7 @@ class QCDAware(Adj_Kernel):
 class QCDAwareMeanNorm(Adj_Kernel):
     """kernel based on 'QCD-Aware Recursive Neural Networks for Jet Physics'"""
 
-    def __init__(self, fmaps, alpha, beta, periodic=False):
+    def __init__(self, fmaps, alpha, beta, periodic=False,**kwargs):
         super(QCDAwareMeanNorm, self).__init__()
 
         alpha = Parameter(alpha * (torch.rand(1, 1) * 0.02 + 0.99))

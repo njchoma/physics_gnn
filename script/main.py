@@ -50,6 +50,7 @@ def main():
                                                   'test'
                                                   )
         param.args.first_fm = 6
+        param.args.spatial_coords = [1,2]
     elif param.args.data == 'NERSC':
         from loading.data.nersc.load_data import load_raw_data
         datadir = '/data/grochette/data_nersc/'
@@ -64,6 +65,7 @@ def main():
                                                   'test'
                                                   )
         param.args.first_fm = 5
+        param.args.spatial_coords = [1,2]
     elif param.args.data == 'ICECUBE':
         from loading.data.icecube.load_data import load_raw_data
         # datadir = '/global/homes/n/njchoma/data/njc_data'
@@ -79,6 +81,7 @@ def main():
                                                   param.args.nbtest
                                                   )
         param.args.first_fm = 6
+        param.args.spatial_coords = [0,1,2]
     else:
         raise ValueError('--data should be NYU or NERSC')
     logging.info("Data loaded")

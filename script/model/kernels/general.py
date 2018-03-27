@@ -247,20 +247,44 @@ def _softmax_with_padding(adj_in, batch_nb_nodes):
 
 class Gaussian(Adj_Kernel):
     """Gaussian kernel"""
-    def __init__(self, *args, diag=True, norm=False, periodic=False, **kwargs):
+    def __init__(self, *args, diag=True, norm=False, periodic=False, spatial_coords=None, **kwargs):
         super(Gaussian, self).__init__(*args, **kwargs)
         sigma = Parameter(torch.rand(1) * 0.02 + 0.99)
         self.register_parameter('sigma', sigma)  # Uniform on [0.9, 1.1]
         self.diag = diag
         self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
+        self.periodic = periodic
+        self.spatial_coords = spatial_coords
+        if spatial_coords is not None:
+          print("Spatial coords: {}".format(spatial_coords))
+        else:
+          print("Full gaussian kernel")
 
     def _apply_norm(self, adj, batch_nb_nodes):
       return adj
 
     def forward(self, adj_in, emb, *args, batch_nb_nodes = None, **kwargs):
         """takes the exponential of squared distances"""
+        batch, fmap, nb_node = emb.size()
 
-        adj = gaussian(self.sqdist(emb), self.sigma)
+        if self.periodic:
+          adj = gaussian(self.sqdist(emb), self.sigma)
+        else:
+          if self.spatial_coords is not None:
+            coord = emb[:,self.spatial_coords]
+            fmap = len(self.spatial_coords)
+          else:
+            coord = emb
+          # Expand and transpose coords
+          coord = coord.unsqueeze(3).expand(batch,fmap,nb_node,nb_node)
+          coord_t = coord.transpose(2,3)
+
+          # Apply gaussian kernel to adj
+          adj = coord-coord_t
+          adj = adj**2
+          adj = adj.mean(1)
+          adj = torch.exp(-adj.div(self.sigma**2))
+          
         if not self.diag:
             adj = _delete_diag(adj)
 
@@ -269,8 +293,8 @@ class Gaussian(Adj_Kernel):
         return adj
 
 class GaussianSoftmax(Gaussian):
-  def __init__(self, *args, diag=True, norm=False, periodic=False, **kwargs):
-    super(GaussianSoftmax, self).__init__(*args, diag=diag, norm=norm, periodic=periodic, **kwargs)
+  def __init__(self, *args, diag=True, norm=False, periodic=False,spatial_coords=None, **kwargs):
+    super(GaussianSoftmax, self).__init__(*args, diag=diag, norm=norm, periodic=periodic,spatial_coords=spatial_coords, **kwargs)
 
   def _apply_norm(self, adj, batch_nb_nodes):
     return _softmax_with_padding(adj, batch_nb_nodes)

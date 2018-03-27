@@ -69,7 +69,11 @@ def _get_one_kernel(kernel_name):
   # Initiate first kernel with proper nb feature maps
   # Only occurs if kernel meant for first layer
   if 'no_first' not in ker_options:
-    init_kernel = kernel(*(param.args.first_fm,)+ker_args,**ker_kwargs)
+    init_kernel = kernel(
+                          *(param.args.first_fm,)+ker_args,
+                          spatial_coords=param.args.spatial_coords,
+                          **ker_kwargs
+                          )
     kernels[0] = init_kernel
   if 'layerwise' in ker_options:
     # Distinct kernel instance for each layer
