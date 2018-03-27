@@ -31,24 +31,28 @@ def train_net(net, X, y, w, criterion, optimizer):
 
         # X = [np.random.randint(0, 10, size=(6,3))]
         # X = [np.random.randint(0,3,size=(6,2)), np.random.randint(0, 10, size=(6,3))]
-        batch_X, adj_mask, batch_nb_nodes = batching.pad_batch([X[s] for s in idx],param.args.nb_extra_nodes)
+        # Put samples into batches
+        batch_X, adj_mask, batch_nb_nodes = batching.pad_batch(
+                                              [X[s] for s in idx],
+                                              param.args.nb_extra_nodes
+                                              )
         batch_y = [int(y[s]) for s in idx]
         batch_w = [w[s] for s in idx]
 
+        # Put into variables
         ground_truth = Variable(torch.Tensor(batch_y))
         jet = Variable(torch.Tensor(batch_X))
         weight = Variable(torch.Tensor(batch_w))
-        if adj_mask is not None:
-          adj_mask = Variable(torch.Tensor(adj_mask))
-          batch_nb_nodes = Variable(torch.Tensor(batch_nb_nodes.tolist()))
+        adj_mask = Variable(torch.Tensor(adj_mask))
+        batch_nb_nodes = Variable(torch.Tensor(batch_nb_nodes.tolist()))
 
+        # Put on cuda if necessary
         if param.args.cuda:
             ground_truth = ground_truth.cuda()
             jet = jet.cuda()
             weight = weight.cuda()
-            if adj_mask is not None:
-              adj_mask = adj_mask.cuda()
-              batch_nb_nodes = batch_nb_nodes.cuda()
+            adj_mask = adj_mask.cuda()
+            batch_nb_nodes = batch_nb_nodes.cuda()
 
         # t0 = time.time()
         if i == 2:
@@ -62,10 +66,13 @@ def train_net(net, X, y, w, criterion, optimizer):
         epoch_loss += loss.data[0]
         step_loss += loss.data[0]
 
+        # Print info
         if (i + 1) % param.args.nbprint == 0:
-            logging.info('    {} : {}'.format((i+1)*param.args.nb_batch, step_loss / param.args.nbprint))
-            step_loss = 0
-
+          logging.info('    {} : {}'.format(
+                                            (i+1)*param.args.nb_batch, 
+                                            step_loss / param.args.nbprint)
+                                            )
+          step_loss = 0
         loss.backward()
         optimizer.step()
     epoch_loss_avg = epoch_loss / len(batch_idx)
@@ -77,53 +84,41 @@ def train_net(net, X, y, w, criterion, optimizer):
 def test_net(net, X, y, w, criterion, roccurve):
     """Tests the network, returns the ROC AUC and epoch loss"""
 
-    # criterion = nn.BCELoss()
     logging.warning('testing on {} events'.format(len(y)))
     epoch_loss = 0
     roccurve.reset()
     net.eval()
 
     # Sort test batches by size which greatly reduces padded zeros
-    # Should have no effect on results, except it does
-    # (a lot, of course for the worse)
     batch_idx = batching.get_batches_for_testing(
                                       len(y), 
                                       param.args.nb_batch, 
                                       X
                                       )
-    '''
-
-    batch_idx = batching.get_batches(
-                                      len(y), 
-                                      param.args.nb_batch, 
-                                      )
-    '''
-    # X0 = [np.random.randint(-2,3,size=(6,2)), np.random.randint(0, 10, size=(6,3))]
-
     
     for i, idx in enumerate(batch_idx):
-        # idx = [0,1]
-        # X = [X0[0], np.zeros((6, i+2))]
-        # idx = idxt
-        # idx[0] = 0
-        batch_X, adj_mask, batch_nb_nodes = batching.pad_batch([X[s] for s in idx],param.args.nb_extra_nodes)
+        # Create batches
+        batch_X, adj_mask, batch_nb_nodes = batching.pad_batch(
+                                                [X[s] for s in idx],
+                                                param.args.nb_extra_nodes
+                                                )
         batch_y = [int(y[s]) for s in idx]
         batch_w = [w[s] for s in idx]
 
+        # Put Variables in batches
         ground_truth = Variable(torch.Tensor(batch_y))
         jet = Variable(torch.Tensor(batch_X))
         weight = Variable(torch.Tensor(batch_w))
-        if adj_mask is not None:
-          adj_mask = Variable(torch.Tensor(adj_mask))
-          batch_nb_nodes = Variable(torch.Tensor(batch_nb_nodes.tolist()))
+        adj_mask = Variable(torch.Tensor(adj_mask))
+        batch_nb_nodes = Variable(torch.Tensor(batch_nb_nodes.tolist()))
 
+        # Put on cuda if necessary
         if param.args.cuda:
             ground_truth = ground_truth.cuda()
             jet = jet.cuda()
             weight = weight.cuda()
-            if adj_mask is not None:
-              adj_mask = adj_mask.cuda()
-              batch_nb_nodes = batch_nb_nodes.cuda()
+            adj_mask = adj_mask.cuda()
+            batch_nb_nodes = batch_nb_nodes.cuda()
 
         out = net(jet, adj_mask, batch_nb_nodes)
         loss = criterion(out, ground_truth, weight)

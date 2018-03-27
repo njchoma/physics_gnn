@@ -8,6 +8,11 @@ Good for array runs 0-99
 '''
 
 def get_one_model_stats(model_dir):
+  '''
+  Get statistics of one trained model
+  Best model chosen by test 1/FPR
+  Can add more statistics here if desired
+  '''
   csv_file = [f for f in os.listdir(model_dir) if f.endswith(".csv")][0]
   csv_file = os.path.join(model_dir, csv_file)
   with open(csv_file, 'r') as filein:
@@ -22,6 +27,9 @@ def get_one_model_stats(model_dir):
   return stats
 
 def write_one_model(f, model):
+  '''
+  Write summary for one trained model
+  '''
   f.write(model['name']+'\n')
   for key in model:
     if key == 'name':
@@ -31,6 +39,9 @@ def write_one_model(f, model):
   f.write("\n")
 
 def summarize_stats(stats_all_models):
+  '''
+  Get mean and standard error for each statistic
+  '''
   mean = {}
   err = {}
   nb_models = len(stats_all_models)
@@ -56,6 +67,9 @@ def summarize_stats(stats_all_models):
   return mean, err
 
 def summarize_one_model_type(models_dir, model_name):
+  '''
+  Summarize statistics of all models which begin with model_name
+  '''
   models = [os.path.join(models_dir, o) for o in os.listdir(models_dir)
                                     if o[:-2] == model_name]
   model_info = []
@@ -70,6 +84,7 @@ def summarize_one_model_type(models_dir, model_name):
   stats_mean, stats_stderr = summarize_stats(model_info)
   nb_models = len(model_info)
   filename_out = os.path.join(models_dir, model_name) + '.txt'
+  # Write summary statistics for all models combined
   with open(filename_out, 'w') as f:
     f.write("SUMMARY:\n")
     f.write("{} models trained\n".format(nb_models))
@@ -78,10 +93,15 @@ def summarize_one_model_type(models_dir, model_name):
       f.write(" +/- {0:.3g}  ".format(stats_stderr[key]))
       f.write("{}\n".format(key))
     f.write("\n\n")
+    # Write statistics for each trained model
     for m in model_info:
       write_one_model(f,m)
 
 def summarize_all_in_dir(models_dir):
+  '''
+  Finds all models within the selected directory and
+  performs summary of the relevant statistics
+  '''
   model_folders = [o for o in os.listdir(models_dir) 
                       if os.path.isdir(os.path.join(models_dir,o))]
   unique_names = set()
@@ -106,6 +126,5 @@ def read_args():
   return parser.parse_args()
 
 if __name__ == "__main__":
-  models_dir = '/home/nc2201/research/GCNN/modelsNYU'
   args = read_args()
   summarize_all_in_dir(args.path)

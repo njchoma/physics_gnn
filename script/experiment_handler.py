@@ -15,7 +15,11 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
   """Loads data, recover network then train, test and save network"""
 
 
-  net = build_model.make_net_if_not_there(param.args, param.args.first_fm, param.args.savedir)
+  net = build_model.make_net_if_not_there(
+                                          param.args, 
+                                          param.args.first_fm, 
+                                          param.args.savedir
+                                          )
   logging.info(net)
 
   if param.args.cuda:
@@ -32,7 +36,7 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
   param.args.bestAuc = 0.0
 
   # Set up roc plotting
-  zooms = [1., 0.01, 0.001]
+  zooms = [1., 0.01, 0.001, 0.0001]
   roc_train = ROCCurve("train", zooms=zooms)
   roc_test  = ROCCurve("test", zooms=zooms)
 
@@ -41,13 +45,34 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
     logging.info('\nLearning rate: {0:.3g}'.format(param.args.lrate))
     optimizer = torch.optim.Adamax(net.parameters(), lr=param.args.lrate)
 
-    epoch_loss_avg = model.train_net(net, train_X, train_y, train_w, criterion, optimizer)
+    epoch_loss_avg = model.train_net(
+                                      net, 
+                                      train_X, 
+                                      train_y, 
+                                      train_w, 
+                                      criterion, 
+                                      optimizer
+                                      )
     param.args.lrate *= param.args.lrdecay
     logging.info(param.args.name+' loss epoch {} : {}'.format(epoch+1,epoch_loss_avg))
 
     # Model performance on subset of training data, test data
-    auc_train, loss_train, fpr_train, roc_train = model.test_net(net, train_X[:param.args.nbtest], train_y[:param.args.nbtest], train_w[:param.args.nbtest], criterion, roc_train)
-    auc_test, loss_test, fpr_test, roc_test = model.test_net(net, test_X, test_y, test_w, criterion, roc_test)
+    auc_train, loss_train, fpr_train, roc_train = model.test_net(
+                                                      net, 
+                                                      train_X[:param.args.nbtest],
+                                                      train_y[:param.args.nbtest],
+                                                      train_w[:param.args.nbtest],
+                                                      criterion,
+                                                      roc_train
+                                                      )
+    auc_test, loss_test, fpr_test, roc_test = model.test_net(
+                                                      net, 
+                                                      test_X, 
+                                                      test_y, 
+                                                      test_w, 
+                                                      criterion, 
+                                                      roc_test
+                                                      )
 
     # Log eval performance
     print_epoch_info(epoch, "train", loss_train, auc_train, (1/fpr_train))
@@ -61,8 +86,8 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
                     + str(loss_test) + ','
                     + str(auc_train) + ','
                     + str(auc_test) + ','
-                    + str(1 / fpr_train)  + ','
-                    + str(1 / fpr_test)  + ','
+                    + str(1 / (10**-20+fpr_train))  + ','
+                    + str(1 / (10**-20+fpr_test))  + ','
                     + str(epoch_loss_avg) + '\n'
                     )
 
