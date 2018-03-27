@@ -40,7 +40,7 @@ class Fixed_Balanced(nn.Module):
 
   def forward(self, adj, adj_list):
     adj = _zero_incoming_adj(adj)
-    for i in range(self.nb_kernels):
+    for i in range(len(adj_list)):
       adj += adj_list[i]
-    adj /= self.nb_kernels
+    adj /= len(adj_list)
     return adj
