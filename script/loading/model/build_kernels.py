@@ -65,18 +65,18 @@ def _get_one_kernel(kernel_name):
   kernel, ker_args, ker_kwargs  = _get_kernel_class(ker_options[0])
   if 'layerwise' in ker_options:
     ker_kwargs['layerwise'] = True
-  kernels = []
+  kernels = {}
   # Initiate first kernel with proper nb feature maps
   init_kernel = kernel(*(param.args.first_fm,)+ker_args,**ker_kwargs)
-  kernels.append(init_kernel)
+  kernels[0] = init_kernel
   if 'layerwise' in ker_options:
     # Distinct kernel instance for each layer
     ker_kwargs['layerwise'] = True
     for i in range(1,param.args.nb_layer):
-      kernels.append(kernel(*(param.args.nb_feature_maps,)+ker_args, **ker_kwargs))
+      kernels[i] = kernel(*(param.args.nb_feature_maps,)+ker_args, **ker_kwargs)
   else: # Use same kernel instance at all layers
     for i in range(1,param.args.nb_layer):
-      kernels.append(init_kernel)
+      kernels[i] = init_kernel
   return kernels
 
 def get_kernels():
@@ -89,6 +89,9 @@ def get_kernels():
   for i in range(param.args.nb_layer):
     layer_kernels = []
     for ker in all_kernels:
-      layer_kernels.append(ker[i])
+      try:
+        layer_kernels.append(ker[i])
+      except:
+        pass
     module_kernels.append(nn.ModuleList(layer_kernels))
   return nn.ModuleList(module_kernels)
