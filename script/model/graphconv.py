@@ -64,14 +64,22 @@ class GraphOpConv(nn.Module):
 
         batch_size, _, nb_node = emb_in.size()
 
-        avg = mean_with_padding(emb_in.clone(), batch_nb_nodes, adj_mask).unsqueeze(2).expand_as(emb_in)
+        # Get mean of features across all nodes
+        # Must use batch mean with padding
+        avg = mean_with_padding(
+                                emb_in.clone(), 
+                                batch_nb_nodes, 
+                                adj_mask
+                                ).unsqueeze(2).expand_as(emb_in)
         if ops is None:  # permutation invariant kernel
             spread = (emb_in, avg,)
         else:
             spread = torch.bmm(emb_in, ops)
-            # split spreading from different operators, concatenate on feature maps
+            # Split spreading from different operators 
+            # Concatenate on feature maps
+            #   (identity operator and average are default)
             spread = spread.split(nb_node, 2)
-            spread = (emb_in, avg,) + spread  # identity operator and average are default
+            spread = (emb_in, avg,) + spread  
         spread = torch.cat(spread, 1)
 
         # apply weights and bias
@@ -92,35 +100,35 @@ class GraphOpConv(nn.Module):
 
 
 class ResGOpConv(nn.Module):
-    """Residual graph neural network :
-            RGC(x) = [ GC(x) || relu(GC(x)) ]
-    """
+  """Residual graph neural network :
+          RGC(x) = [ GC(x) || relu(GC(x)) ]
+  """
 
-    def __init__(self, in_fm, out_fm, nb_op):
-        super(ResGOpConv, self).__init__()
+  def __init__(self, in_fm, out_fm, nb_op):
+    super(ResGOpConv, self).__init__()
 
-        if out_fm % 2 != 0:
-            raise ValueError(
-                'ResGOpConv requires event number of output feature maps : {}'.format(out_fm))
+    if out_fm % 2 != 0:
+      raise ValueError(
+        'ResGOpConv requires even # of output feature maps: {}'.format(out_fm))
 
-        half_out_fm = int(out_fm / 2)
-        self.gconv_lin = GraphOpConv(in_fm, half_out_fm, nb_op)
-        self.gconv_nlin = GraphOpConv(in_fm, half_out_fm, nb_op)
+    half_out_fm = int(out_fm / 2)
+    self.gconv_lin = GraphOpConv(in_fm, half_out_fm, nb_op)
+    self.gconv_nlin = GraphOpConv(in_fm, half_out_fm, nb_op)
 
-    def forward(self, ops, emb_in, batch_nb_nodes, adj_mask):
-        linear = self.gconv_lin(ops, emb_in, batch_nb_nodes, adj_mask)
-        check_for_nan(linear, 'NAN in resgconv : linear')
+  def forward(self, ops, emb_in, batch_nb_nodes, adj_mask):
+    linear = self.gconv_lin(ops, emb_in, batch_nb_nodes, adj_mask)
+    check_for_nan(linear, 'NAN in resgconv : linear')
 
-        nlinear = self.gconv_nlin(ops, emb_in, batch_nb_nodes, adj_mask)
-        check_for_nan(nlinear, 'NAN in resgconv : nlinear')
-        nlinear = relu(nlinear)
+    nlinear = self.gconv_nlin(ops, emb_in, batch_nb_nodes, adj_mask)
+    check_for_nan(nlinear, 'NAN in resgconv : nlinear')
+    nlinear = relu(nlinear)
 
-        emb_out = torch.cat((linear, nlinear), 1)
+    emb_out = torch.cat((linear, nlinear), 1)
 
-        if (emb_out != emb_out).data.sum() > 0:
-            print('NAN in first gconv : before return')
-            assert False
+    if (emb_out != emb_out).data.sum() > 0:
+      print('NAN in first gconv : before return')
+      assert False
 
-        return emb_out
+    return emb_out
 
 
