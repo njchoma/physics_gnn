@@ -64,6 +64,9 @@ def train_net(net, X, y, w, criterion, optimizer):
         # print("sample took {:.3e} s".format(time.time()-t0))
 
         loss = criterion(out, ground_truth, weight)
+        loss.backward()
+        optimizer.step()
+
         epoch_loss += loss.data[0]
         step_loss += loss.data[0]
 
@@ -74,8 +77,6 @@ def train_net(net, X, y, w, criterion, optimizer):
                                             step_loss / param.args.nbprint)
                                             )
           step_loss = 0
-        loss.backward()
-        optimizer.step()
     epoch_loss_avg = epoch_loss / len(batch_idx)
     if plots is not None:
       plots.epoch_finished()

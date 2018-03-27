@@ -91,7 +91,11 @@ def main():
     param.args.nbtest  = len(test_X)
 
     # Train
-    train_model(train_X, train_y, train_w, test_X, test_y, test_w)
+    try:
+      train_model(train_X, train_y, train_w, test_X, test_y, test_w)
+    except Exception as e:
+      logging.error(e)
+      raise e
 
 
 if __name__ == '__main__':
