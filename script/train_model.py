@@ -22,8 +22,9 @@ def train_net(net, X, y, w, criterion, optimizer):
 
     plots = construct_plot(param.args)
 
-    batch_idx = batching.get_batches(len(y), 
+    batch_idx = batching.get_sorted_batches(len(y), 
                                      param.args.nb_batch, 
+                                     X,
                                      param.args.shuffle_while_training)
 
     for i, idx in enumerate(batch_idx):
@@ -68,7 +69,7 @@ def train_net(net, X, y, w, criterion, optimizer):
 
         # Print info
         if (i + 1) % param.args.nbprint == 0:
-          logging.info('    {} : {}'.format(
+          logging.info('  {} : {}'.format(
                                             (i+1)*param.args.nb_batch, 
                                             step_loss / param.args.nbprint)
                                             )
@@ -84,13 +85,13 @@ def train_net(net, X, y, w, criterion, optimizer):
 def test_net(net, X, y, w, criterion, roccurve):
     """Tests the network, returns the ROC AUC and epoch loss"""
 
-    logging.warning('testing on {} events'.format(len(y)))
+    logging.warning('Testing on {} events'.format(len(y)))
     epoch_loss = 0
     roccurve.reset()
     net.eval()
 
     # Sort test batches by size which greatly reduces padded zeros
-    batch_idx = batching.get_batches_for_testing(
+    batch_idx = batching.get_sorted_batches(
                                       len(y), 
                                       param.args.nb_batch, 
                                       X
@@ -126,7 +127,7 @@ def test_net(net, X, y, w, criterion, roccurve):
         roccurve.update(out.data, ground_truth.data, weight.data)
 
         if (i + 1) % (5*param.args.nbprint) == 0:
-            logging.info('tested on {}'.format((i+1)*param.args.nb_batch))
+            logging.info('  tested on {}'.format((i+1)*param.args.nb_batch))
 
     score = roccurve.score_auc()
     fpr50 = roccurve.score_fpr()
