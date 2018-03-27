@@ -13,7 +13,7 @@ def get_batches(nb_samples_in, batch_size, shuffle_batch=False):
     idx_list.append(idx[i:i+batch_size])
   return idx_list
 
-def pad_batch(X):
+def pad_batch(X, nb_extra_nodes=0):
   nb_samples = len(X)
   nb_features = X[0].shape[0]
 
@@ -23,8 +23,9 @@ def pad_batch(X):
     sample_sizes[i] = sample.shape[1]
     largest_size = max(largest_size, sample_sizes[i])
 
-  # largest_size += 50
+  largest_size += nb_extra_nodes
   pad_sizes = largest_size - sample_sizes 
+  sample_sizes += nb_extra_nodes
   mask = np.zeros(shape=(nb_samples, largest_size, largest_size))
   # Pad samples with zeros
   for i in range(nb_samples):

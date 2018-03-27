@@ -31,7 +31,7 @@ def train_net(net, X, y, w, criterion, optimizer):
 
         # X = [np.random.randint(0, 10, size=(6,3))]
         # X = [np.random.randint(0,3,size=(6,2)), np.random.randint(0, 10, size=(6,3))]
-        batch_X, adj_mask, batch_nb_nodes = batching.pad_batch([X[s] for s in idx])
+        batch_X, adj_mask, batch_nb_nodes = batching.pad_batch([X[s] for s in idx],param.args.nb_extra_nodes)
         batch_y = [int(y[s]) for s in idx]
         batch_w = [w[s] for s in idx]
 
@@ -106,7 +106,7 @@ def test_net(net, X, y, w, criterion, roccurve):
         # X = [X0[0], np.zeros((6, i+2))]
         # idx = idxt
         # idx[0] = 0
-        batch_X, adj_mask, batch_nb_nodes = batching.pad_batch([X[s] for s in idx])
+        batch_X, adj_mask, batch_nb_nodes = batching.pad_batch([X[s] for s in idx],param.args.nb_extra_nodes)
         batch_y = [int(y[s]) for s in idx]
         batch_w = [w[s] for s in idx]
 
