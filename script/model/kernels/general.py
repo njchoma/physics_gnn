@@ -39,19 +39,6 @@ def _batch_bind(adj_unbind, nb_batch):
   return torch.stack(adj, dim=0)
 
 
-def get_summed_weights(adj_in):
-  # Assume adj_in is shape nb_node x nb_node
-  # Calculate sum weights
-  # to be used as input of MLP
-  sum_weights = adj_in.sum(dim=0)
-  self_edges = adj_in.diag()
-  sum_weights -= self_edges
-  # Normalize
-  sum_weights /= adj_in.size()[0]-1
-  sum_weights = sum_weights.squeeze()
-  return sum_weights
-  
-
 def _save_adj_no_save(*args, **kwargs):
   pass
 
@@ -75,85 +62,6 @@ class Adj_Kernel(nn.Module):
   
   def update(self, *args, **kwargs):
     return self.adj_matrix
-
-class Gaussian_prev(Adj_Kernel):
-   def __init__(self,fmaps,sparse=None,sigma=2.0):
-      super(Gaussian, self).__init__()
-      self.sigma = sigma
-
-   def forward(self, adj_in, emb_in,*args, **kwargs):
-      batch, fmap, nb_node = emb_in.size()
-      # Normalize input coordinates
-      coord = emb_in.div(emb_in.std())
-      # Expand and transpose coords
-      coord = coord.unsqueeze(3).expand(batch,fmap,nb_node,nb_node)
-      coord_t = coord.transpose(2,3)
-
-      # Apply gaussian kernel to adj
-      adj = coord-coord_t
-      adj = adj**2
-      adj = adj.mean(1)
-      adj = torch.exp(-adj.div(self.sigma))
-      return adj
-
-class DirectedGaussian(Adj_Kernel):
-   def __init__(self,fmaps,theta=0.67,sigma=1,sparse=None):
-      super(DirectedGaussian, self).__init__()
-      self.gauss_ker = Gaussian(sigma)
-      theta = torch.FloatTensor([theta])
-      self.register_parameter('theta', Parameter(theta))
-      print("WARNING: Sparse not yet implemented for DirectedGaussian")
-
-   def forward(self, adj_in, emb_in,idx):
-      batch, fmap, nb_node = emb_in.size()
-      sum_weights = []
-      for i in range(batch):
-        sum_weights.append(get_summed_weights(adj_in[0]).unsqueeze(0))
-      sum_weights = torch.cat(sum_weights,0)
-      # Expand to match adj size
-      sum_weights = sum_weights.expand(batch, nb_node, nb_node)
-      # Transpose so row is uniform
-      sum_weights = sum_weights.transpose(1,2)
-      adj = self.gauss_ker(adj_in, emb_in)
-      adj = self.theta*adj + (1-self.theta) * sum_weights
-
-      return adj
-
-class MPNNdirected(Adj_Kernel):
-   # Inspired by AdjacencyMatrix in Neural Message Passing for Jet Physics
-   def __init__(self,fmaps):
-      super(MPNNdirected, self).__init__()
-      self.fmaps = fmaps
-      v = torch.FloatTensor(torch.rand(fmaps))
-      b = torch.FloatTensor(torch.rand(1))
-      self.register_parameter('v', Parameter(v))
-      self.register_parameter('b', Parameter(b))
-
-   def forward(self, adj_in, emb_in):
-      batch, fmap, nb_node = emb_in.size()
-      # Normalize input coordinates
-      coord = emb_in.div(emb_in.std())
-      # Expand and transpose coords
-      coord = coord.unsqueeze(3).expand(batch,fmap,nb_node,nb_node)
-      coord_t = coord.transpose(2,3)
-
-      # Apply sigmoid(v^T(h+h')+b) kernel to adj
-      coord = coord+coord_t
-      v = self.v.expand(batch,1,fmap)
-      b = self.b.expand(batch,nb_node)
-
-      if adj_in.is_cuda:
-         adj = torch.cuda.FloatTensor(batch,nb_node,nb_node).zero_()
-      else:
-         adj = torch.FloatTensor(batch,nb_node,nb_node).zero_()
-      adj = Variable(adj)
-
-      for i in range(nb_node):
-         to_mult = coord[:,:,:,i]
-         adj[:,:,i] = torch.bmm(v,to_mult).squeeze(1)+b
-
-      adj = functional.sigmoid(adj)
-      return adj
 
 
 class MLPdirected(Adj_Kernel):
@@ -212,27 +120,6 @@ def _delete_diag(adj):
 
     return adj
 
-
-'''
-def _stochastich(adj):
-  deg = adj.sum(2)
-  adj /= deg.expand_as(adj)
-
-  return adj
-'''
-
-def _softmax(dij, _softmax_fct):
-  batch = dij.size()[0]
-
-  dij = torch.unbind(dij, dim=0)
-  dij = torch.cat(dij, dim=0)
-
-  dij = _softmax_fct(dij)
-
-  dij = torch.chunk(dij, batch, dim=0)
-  dij = torch.stack(dij, dim=0)
-
-  return dij
 
 def _softmax_with_padding(adj_in, batch_nb_nodes):
   exp = adj_in.exp()

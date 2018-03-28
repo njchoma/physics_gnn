@@ -13,21 +13,6 @@ def _get_kernel_class(kernel_name):
   loop2pi = param.args.data == 'NERSC'  # in NERSC data, phi is 2pi-periodic
   ker_args = ()
   ker_kwargs = {}
-  if kernel_name == 'FCG':
-    # kernel = ker.FixedComplexGaussian(args.sigma, periodic=loop2pi)
-    raise Exception("kernel not configured")
-  elif kernel_name == 'FCG_nodiag':
-    # kernel = ker.FixedComplexGaussian(args.sigma, diag=False, periodic=loop2pi)
-    raise Exception("kernel not configured")
-  elif kernel_name == 'FCG_norm':
-    # kernel = ker.FixedComplexGaussian(args.sigma, norm=True, periodic=loop2pi)
-    raise Exception("kernel not configured")
-  elif kernel_name == 'FCG_nodiag_norm':
-    # kernel = ker.FixedComplexGaussian(args.sigma, diag=False, norm=True, periodic=loop2pi)
-    raise Exception("kernel not configured")
-  elif kernel_name == 'FQCDAware':
-    # kernel = ker.FixedQCDAware(0.5, 0.1, periodic=loop2pi)
-    raise Exception("kernel not configured")
   elif kernel_name == 'QCDAware':
     kernel = physics.QCDAware
     ker_args += (1.0, 0.7,)
@@ -36,20 +21,12 @@ def _get_kernel_class(kernel_name):
     kernel = physics.QCDAwareMeanNorm
     ker_args += (1.0, 0.7,)
     ker_kwargs['periodic'] = loop2pi
-  elif kernel_name == 'QCDAwareNoNorm':
-    kernel =physics.QCDAwareNoNorm
-    ker_args += (1.0, 0.7,)
-    ker_kwargs['periodic'] = loop2pi
   # Instantiate adjacency kernels
   elif kernel_name == 'Gaussian':
     kernel = general.Gaussian
     ker_kwargs['sigma'] = param.args.sigma
   elif kernel_name == 'GaussianSoftmax':
     kernel = general.GaussianSoftmax
-  elif kernel_name == 'DirectedGaussian':
-    kernel = general.DirectedGaussian
-  elif kernel_name == 'MPNNdirected':
-    kernel = general.MPNNdirected
   elif kernel_name == 'MLPdirected':
     kernel = general.MLPdirected
     ker_args += (param.args.nb_MLPadj_hidden,)
