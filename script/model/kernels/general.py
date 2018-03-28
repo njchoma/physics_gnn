@@ -5,7 +5,7 @@ import torch.nn.functional as functional
 from torch.autograd import Variable
 from torch.nn import Parameter
 
-from model import sparse
+from model.kernels import sparse
 
 
 def cartesian(tensor):

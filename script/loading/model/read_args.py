@@ -25,6 +25,7 @@ def read_args():
     add_arg('--nb_MLPadj_hidden', dest='nb_MLPadj_hidden', help='number of hidden units associated with each adj_kernel layer when using MLP adj_kernel',type=int,default=8)
 
     # Model
+    add_arg('--architecture',dest='architecture',help='Model architecture',default='gnn')
     add_arg('--fm', dest='nb_feature_maps', help='number of feature maps per layer', type=int)
     add_arg('--edge_fm', dest='nb_edge_feature', type=int,
             help='number of edge features for GCNN_EdgeFeature')

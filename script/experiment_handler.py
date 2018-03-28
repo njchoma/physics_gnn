@@ -5,21 +5,20 @@ import torch
 import torch.nn as nn
 import os.path as path
 
-from graphics.roccurve import ROCCurve
 import train_model as model
-from loading.model import build_model
 import loading.model.model_parameters as param
+from loading.model import get_model
+from graphics.roccurve import ROCCurve
 
 
 def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
   """Loads data, recover network then train, test and save network"""
 
 
-  net = build_model.make_net_if_not_there(
-                                          param.args, 
-                                          param.args.first_fm, 
-                                          param.args.savedir
-                                          )
+  net = get_model.make_net_if_not_there(
+                                        param.args, 
+                                        param.args.savedir
+                                        )
   logging.info(net)
 
   if param.args.cuda:

@@ -56,11 +56,7 @@ def train_net(net, X, y, w, criterion, optimizer):
             batch_nb_nodes = batch_nb_nodes.cuda()
 
         # t0 = time.time()
-        if i == 2:
-          out = net(jet, adj_mask, batch_nb_nodes, plots)
-        else:
-          out = net(jet, adj_mask, batch_nb_nodes)
-          # out = net(jet, plots)
+        out = net(jet, adj_mask, batch_nb_nodes)
         # print("sample took {:.3e} s".format(time.time()-t0))
 
         loss = criterion(out, ground_truth, weight)
