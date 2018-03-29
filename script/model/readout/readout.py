@@ -80,9 +80,9 @@ class FCL(nn.Module):
     self.activation = nn.Tanh()
 
   def forward(self, emb_in):
-    emb = self.fcl1(emb_in)
+    emb = self.fcl1(emb_in.transpose(1,2))
     emb = self.activation(emb)
-    return self.fcl2(emb)
+    return self.fcl2(emb).transpose(1,2)
 
 class DTNN(nn.Module):
   def __init__(self,fmaps):
