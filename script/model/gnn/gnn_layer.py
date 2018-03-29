@@ -2,8 +2,9 @@ import logging
 import torch
 import torch.nn as nn
 
-from model.utils import graph_operators as graph_ops
 from model.gnn import graphconv as gc
+from model.node_update import get_node_update
+from model.utils import graph_operators as graph_ops
 from utils.tensor import spatialnorm, mask_embedding
 
 class GNN_Layer(nn.Module):
@@ -24,6 +25,9 @@ class GNN_Layer(nn.Module):
     # Define normalization and convolution
     self.spatial_norm = spatialnorm
     self.convolution = gc.ResGOpConv(fmap_in, fmap_out, self.nb_op)
+
+    # Define method for updating nodes
+    self.node_update = get_node_update(fmap_in, fmap_out)
 
   def forward(self, emb_in, adj_in, adj_mask, batch_nb_nodes):
     # Update adjacency matrix
@@ -50,14 +54,17 @@ class GNN_Layer(nn.Module):
 
     # Apply spatial norm
     if self.layer_nb != 0:
-      emb, _, _ = spatialnorm(emb_in, batch_nb_nodes, adj_mask)
+      emb_update, _, _ = spatialnorm(emb_in, batch_nb_nodes, adj_mask)
     else:
-      emb = emb_in
+      emb_update = emb_in
     # Mask embedding for numerical stability
     # Otherwise can get nan / inf errors
-    emb = mask_embedding(emb, adj_mask)
+    emb_update = mask_embedding(emb_update, adj_mask)
     # Apply convolution
-    emb = self.convolution(operators, emb, batch_nb_nodes, adj_mask)
+    emb_update = self.convolution(operators, emb_update, batch_nb_nodes, adj_mask)
+
+    # Apply node update
+    emb = self.node_update(emb_in, emb_update)
 
     # Return embedding and updated adjacency matrix
     return emb, adj
