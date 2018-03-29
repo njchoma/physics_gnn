@@ -39,6 +39,7 @@ def read_args():
   add_arg('--nb_extra_nodes', dest='nb_extra_nodes',help='Number of nodes of initial value 0 to append to each sample',type=int,default=0)
   add_arg('--readout', dest='readout',help='Type of pooling after GNN layers',default='Sum')
   add_arg('--node_type', dest='node_type',help='Type of nodes to use in gnn layers',default='Identity')
+  add_arg('--conv_type', dest='conv_type',help='Type of graph convolution to use in gnn layers',default='ResGNN')
 
 
   args = parser.parse_args()

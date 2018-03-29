@@ -1,32 +1,64 @@
 from math import sqrt
 import torch
-from torch.nn import Parameter
 import torch.nn as nn
 import torch.nn.init
-from torch.nn.functional import relu
+from torch.nn import Parameter
+import torch.nn.functional as F
+
+import loading.model.model_parameters as param
 from utils.tensor import check_for_nan, mean_with_padding
+
+def get_convolution_layer(fmap_in, fmap_out, nb_operators, *args, **kwargs):
+  
+  conv_type = param.args.conv_type
+  conv_args = (fmap_in, fmap_out)
+  
+  if conv_type == 'ResGNN':
+    conv_args += (nb_operators,)
+    conv = ResGOpConv
+  elif conv_type == 'Simple':
+    conv = Simple
+
+  return conv(*conv_args)
+
+class Simple(nn.Module):
+  def __init__(self,fmap_in, fmap_out):
+    super(Simple, self).__init__()
+    self.fc = nn.Linear(fmap_in, fmap_out)
+    self.h_act = nn.ReLU()
+    self.emb_act = nn.Tanh()
+
+  def forward(self, ops, emb_in, *args, **kwargs):
+    batch, fmap, nb_node = emb_in.size()
+    # Embed vertices
+    h = self.fc(emb_in.transpose(1,2))
+    h = self.h_act(h)
+    # Perform convolution
+    A = ops[:,:,nb_node:] # Should be adjacency matrix (will need to improve this)
+    emb = self.emb_act(torch.matmul(A, h))
+    return emb.transpose(1,2)
 
 
 def join_operators(adj, operator_iter):
-    """Applies each operator in `operator_iter` to adjacency matrix `adj`,
-    then change format to be compatible with `GraphOpConv`
+  """Applies each operator in `operator_iter` to adjacency matrix `adj`,
+  then change format to be compatible with `GraphOpConv`
 
-    inputs : - adj : adjacency matrix (graph structure).
-                shape (batch, n, n) or (batch, edge_fm, n, n)
-             - operator_iter : iterable containing graph operators, handeling either
-                a single or multiple kernels depending on `adj`
+  inputs : - adj : adjacency matrix (graph structure).
+              shape (batch, n, n) or (batch, edge_fm, n, n)
+           - operator_iter : iterable containing graph operators, handeling either
+              a single or multiple kernels depending on `adj`
 
-    output : - ops : `GraphOpConv` compatible representation of operators from
-                `operator_iter` applied to `adj`.
-                shape (batch, n, n * nb_op) or (batch, n, n * edge_fm * nb_op)
-    """
+  output : - ops : `GraphOpConv` compatible representation of operators from
+              `operator_iter` applied to `adj`.
+              shape (batch, n, n * nb_op) or (batch, n, n * edge_fm * nb_op)
+  """
 
-    if not operator_iter:  # empty list
-        return None
-    ops = tuple(operator(adj) for operator in operator_iter)
-    ops = torch.cat(ops, 2)
+  if not operator_iter:  # empty list
+      return None
+  ops = tuple(operator(adj) for operator in operator_iter)
+  ops = torch.cat(ops, 2)
 
-    return ops
+  return ops
 
 
 class GraphOpConv(nn.Module):
@@ -121,7 +153,7 @@ class ResGOpConv(nn.Module):
 
     nlinear = self.gconv_nlin(ops, emb_in, batch_nb_nodes, adj_mask)
     check_for_nan(nlinear, 'NAN in resgconv : nlinear')
-    nlinear = relu(nlinear)
+    nlinear = F.relu(nlinear)
 
     emb_out = torch.cat((linear, nlinear), 1)
 
@@ -130,5 +162,3 @@ class ResGOpConv(nn.Module):
       assert False
 
     return emb_out
-
-

@@ -24,7 +24,7 @@ class GNN_Layer(nn.Module):
 
     # Define normalization and convolution
     self.spatial_norm = spatialnorm
-    self.convolution = gc.ResGOpConv(fmap_in, fmap_out, self.nb_op)
+    self.convolution = gc.get_convolution_layer(fmap_in, fmap_out, self.nb_op)
 
     # Define method for updating nodes
     self.node_update = get_node_update(fmap_in, fmap_out)
