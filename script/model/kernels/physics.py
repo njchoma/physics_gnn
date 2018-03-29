@@ -371,7 +371,7 @@ class QCDAwareMeanNorm(Adj_Kernel):
         # d_ij_norm.register_hook(ts.HookCheckForNan('NAN in backward d_ij_norm', action=print))
         # ts.check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
         d_ij_norm = d_ij_norm * mask
-        w_ij = _softmax_with_padding(d_ij_norm, mask)
+        w_ij = _softmax_with_padding(d_ij_norm, mask=mask, batch_nb_nodes=batch_nb_nodes)
         # w_ij = d_ij_norm.exp()
 
         # Save adj matrix for later layers

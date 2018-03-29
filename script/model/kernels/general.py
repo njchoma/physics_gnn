@@ -68,9 +68,9 @@ class DistMult(Adj_Kernel):
     super(DistMult, self).__init__(*args,sparse,**kwargs)
     self.matrix = nn.Parameter(torch.zeros(fmap,fmap))
 
-  def forward(self, adj_in, emb_in, layer, *args, mask=None, **kwargs):
+  def forward(self,adj_in,emb_in, *args, mask=None, batch_nb_nodes=None, **kwargs):
     adj = torch.matmul(emb_in.transpose(1,2), torch.matmul(self.matrix, emb_in))
-    adj = _softmax_with_padding(adj, mask)
+    adj = _softmax_with_padding(adj, mask=mask, batch_nb_nodes=batch_nb_nodes)
     self._save_adj(adj)
     return adj
 
@@ -130,13 +130,24 @@ def _delete_diag(adj):
 
     return adj
 
-
-def _softmax_with_padding(adj_in, mask):
+'''
+def _softmax_with_padding(adj_in, mask=None, batch_nb_nodes=None):
   S = functional.softmax(adj_in)
   if mask is not None:
     S = S * mask
   E = S.sum(2,keepdim=True) + 10**-10
   return S / E
+'''
+
+def _softmax_with_padding(adj_in, mask=None, batch_nb_nodes=None):
+  exp = adj_in.exp()
+  summed_exp = exp.sum(2)
+  # Remove padded nodes from sum
+  padding_correction = adj_in.size()[1]-batch_nb_nodes
+  padding_correction = padding_correction.unsqueeze(1).expand_as(summed_exp)
+  summed_exp = summed_exp - torch.mul(padding_correction, exp[:,-1])
+  # Apply softmax
+  return exp / (summed_exp + 10 **-20).unsqueeze(2).expand_as(exp)
 
 
 class Gaussian(Adj_Kernel):
@@ -157,7 +168,7 @@ class Gaussian(Adj_Kernel):
     def _apply_norm(self, adj, batch_nb_nodes):
       return adj
 
-    def forward(self, adj_in, emb, *args, mask = None, **kwargs):
+    def forward(self, adj_in, emb, *args, mask=None, batch_nb_nodes=None,**kwargs):
         """takes the exponential of squared distances"""
         batch, fmap, nb_node = emb.size()
 
@@ -182,7 +193,7 @@ class Gaussian(Adj_Kernel):
         if not self.diag:
             adj = _delete_diag(adj)
 
-        adj = self._apply_norm(adj, mask)
+        adj = self._apply_norm(adj, mask, batch_nb_nodes)
         self.save_adj(adj)
         return adj
 
@@ -190,7 +201,7 @@ class GaussianSoftmax(Gaussian):
   def __init__(self, *args, diag=True, norm=False, periodic=False,spatial_coords=None, **kwargs):
     super(GaussianSoftmax, self).__init__(*args, diag=diag, norm=norm, periodic=periodic,spatial_coords=spatial_coords, **kwargs)
 
-  def _apply_norm(self, adj, mask):
-    return _softmax_with_padding(adj, mask)
+  def _apply_norm(self, adj, mask, batch_nb_nodes):
+    return _softmax_with_padding(adj, mask=mask,batch_nb_nodes=batch_nb_nodes)
 
     
