@@ -13,7 +13,8 @@ def _get_kernel_class(kernel_name):
   loop2pi = param.args.data == 'NERSC'  # in NERSC data, phi is 2pi-periodic
   ker_args = ()
   ker_kwargs = {}
-  elif kernel_name == 'QCDAware':
+
+  if kernel_name == 'QCDAware':
     kernel = physics.QCDAware
     ker_args += (1.0, 0.7,)
     ker_kwargs['periodic'] = loop2pi
@@ -27,6 +28,8 @@ def _get_kernel_class(kernel_name):
     ker_kwargs['sigma'] = param.args.sigma
   elif kernel_name == 'GaussianSoftmax':
     kernel = general.GaussianSoftmax
+  elif kernel_name == 'DistMult':
+    kernel = general.DistMult
   elif kernel_name == 'MLPdirected':
     kernel = general.MLPdirected
     ker_args += (param.args.nb_MLPadj_hidden,)
@@ -35,7 +38,9 @@ def _get_kernel_class(kernel_name):
     kernel = general.Identity
   else:
     raise ValueError('Unknown kernel : {}'.format(kernel_name))
+
   return kernel, ker_args, ker_kwargs
+
 
 def _get_one_kernel(kernel_name):
   ker_options = kernel_name.split('-')

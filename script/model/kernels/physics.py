@@ -332,7 +332,7 @@ class QCDAwareMeanNorm(Adj_Kernel):
 
         self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
-    def forward(self, adj_in, emb, mask, batch_nb_nodes, *args, **kwargs):
+    def forward(self, adj_in, emb, *args, batch_nb_nodes=None, mask=None, **kwargs):
         nb_batch, _, nb_node = emb.size()
         ts.check_for_nan(self.alpha, 'nan in kernel param : alpha', )
         ts.check_for_nan(self.beta, 'nan in kernel param : beta')
@@ -371,7 +371,7 @@ class QCDAwareMeanNorm(Adj_Kernel):
         # d_ij_norm.register_hook(ts.HookCheckForNan('NAN in backward d_ij_norm', action=print))
         # ts.check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
         d_ij_norm = d_ij_norm * mask
-        w_ij = _softmax_with_padding(d_ij_norm, batch_nb_nodes)
+        w_ij = _softmax_with_padding(d_ij_norm, mask)
         # w_ij = d_ij_norm.exp()
 
         # Save adj matrix for later layers

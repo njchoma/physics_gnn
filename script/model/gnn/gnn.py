@@ -5,7 +5,7 @@ from torch.autograd import Variable
 from model.kernels.build_kernels import get_kernels
 from model.kernels.build_combine_kernels import get_combine_kernels
 from model.gnn.build_layers import get_layers
-from model.readout import get_readout
+from model.readout.readout import get_readout
 
 class GNN(nn.Module):
   '''

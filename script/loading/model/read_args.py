@@ -37,6 +37,7 @@ def read_args():
     add_arg('--nb_batch', dest='nb_batch',help='minibatch size',type=int, default=1)
     add_arg('--no_shuffle', dest='shuffle_while_training',help='Process samples in order of dataset for every epoch',action='store_false')
     add_arg('--nb_extra_nodes', dest='nb_extra_nodes',help='Number of nodes of initial value 0 to append to each sample',type=int,default=0)
+    add_arg('--readout', dest='readout',help='Type of pooling after GNN layers',default='Sum')
 
 
     args = parser.parse_args()
