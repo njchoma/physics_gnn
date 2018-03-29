@@ -11,6 +11,8 @@ def get_node_update(fmap_in,fmap_out):
     node_update = Identity
   elif node_type == 'GRU':
     node_update = GRUUpdate
+  else:
+    raise Exception("Node type {} not recognized".format(node_type))
 
   return node_update(*init_args)
 

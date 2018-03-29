@@ -18,6 +18,8 @@ def get_convolution_layer(fmap_in, fmap_out, nb_operators, *args, **kwargs):
     conv = ResGOpConv
   elif conv_type == 'Simple':
     conv = Simple
+  else:
+    raise Exception("Convolution type {} not recognized".format(conv_type))
 
   return conv(*conv_args)
 

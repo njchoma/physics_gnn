@@ -17,12 +17,14 @@ def get_readout():
     readout = Mean(fmaps)
   elif readout_type == 'Max':
     readout = Max(fmaps)
-  if readout_type == 'DTNN_Sum':
+  elif readout_type == 'DTNN_Sum':
     readout = DTNN_Sum(fmaps)
   elif readout_type == 'DTNN_Mean':
     readout = DTNN_Mean(fmaps)
   elif readout_type == 'DTNN_Max':
     readout = DTNN_Max(fmaps)
+  else:
+    raise Exception("Readout type {} not recognized".format(readout_type))
 
   return readout
 
