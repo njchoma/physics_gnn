@@ -1,58 +1,42 @@
 # GCNN
 
-### graph-convolutions based neural networks and a few applications 
+###  Graph neural network based models with applications in particle physics
 
 ## Code organization
 This repository is organized as such :
 ```
 GCNN/
+    |-- main.sh            # stores model arguments and calls main.py
+    |-- models[dataset]    # directory where trained networks for {NYU, NERSC, ICECUBE} data are saved
     |-- README.md
-    |-- main.sh
-    |-- script/  # python code
-    |   |-- main.py            # main file : reads arguments, call main_nyu or main_nersc to train and test
-    |	|-- main_multiprocess  # runs the main file on a list of arguments contained in GCNN/args.txt
-    |	|-- read_args.py       # functions related to argument reading and network initialization
-    |	|-- model/             # code related to graph convolutions, kernels and networks
-    |	|-- utils/             # small function usefull in different files
-    |	|-- graphics/          # code for plots
-    |	|-- projectNERSC/      # code specific to training/testing on the NERSC data
-    |	|-- projectNYU/        # code specific to training/testing on the NYU data
-    |
-    |-- paramNYU.txt    # file created when launching 'main.sh', contains paths to training and testing NYU data
-    |-- dataNYU     # link (or symbolic link) to a directory containing NYU data
-    |	|-- train_uncropped.pickle
-    |	|-- train_cropped.pickle
-    |	|-- test_cropped.pickle
-    |-- dataNERSC   # link (or symbolic link) to a directory containing NERSC data
-    |	|-- DelphesNevents
-    |   |-- *01.h5  # testing set (multiple files)
-    |   |-- *02.h5  # training set (multiple files)
-    |
-    |-- modelsNYU    # directory where trained networks for NYU data are saved
-    |-- modelsNERSC  # directory where trained networks for NERSC data are saved
-    |
-    |-- args.txt  # sequence of arguments for multiprocessing : each line will be used as an independant set of arguments
+    |-- summarize.sh       # summarizes trained batch array models
+    |-- script/              # python code
+    | |-- main.py            # read arguments, load data from specified dataset, begin experiment
+    | |-- experiment_handler.py # trains, tests over each epoch; perform training plots and save scores
+    | |-- train_model.py     # train, test model over one epoch
+    |	|-- data_ops/          # currently just used for generating and zero-padding minibatches
+    |	|-- graphics/          # code for ROC AUC, 1/FPR scoring and all plots
+    |	|-- loading/           
+    |	| |-- data/              # load handling for all datasets
+    |	| |-- model/             # all code for reading arguments, model save / restore, model global argument handling
+    |	|-- model/             # contains model architectures and kernels
+    |	|-- utils/             # small functions useful in different files
 ```
 
 ## Before training a network
 
-`main.sh` contains commented out command lines that launch training on models with different architecture. You can change parameters used to initialize networks, and more importantly you should change `--data NYU` to `--data NERSC` if this is the data you want to use. You should also add `--cuda` if you want to train on GPU rather that CPU.
-
-Before training a network, create a link `dataNYU` or `dataNERSC` (depending on the data you want to train on) and run `main.sh` once, specifying the data you want to use : it will create the corresponding `param{}.txt` file and assume default paths. You can modify the path to fit a different organization of your local files. If your file system is the same as the default one, this will simply train on the architecture selected in `main.sh`. If not, it will crash so you can modify the `param{}.txt` file.
+`main.sh` contains commented out command lines that launch training on models with different architecture. You can change parameters used to initialize networks, and select the dataset using `--data {NYU, NERSC, ICECUBE}`. `--cuda` runs the network on a GPU.
 
 ## Training a network
 
-To train a network, you simply need to launch `main.sh` after uncommenting in it the line you want to use, or use a single command calling `python script/main.py [arguments]`. Run `python script/main.py --help` to see a list of arguments.
+To train a network, launch `main.sh` with argumented defined as desired. Run `python3 script/main.py --help` to see a list of arguments.
 
 The main arguments used to design a network are :
 * `--kernel str` : type of kernel / architecture used
 * `--fm int` : number of node feature maps at each layer
-* `--edge_fm int` : number of edge feature maps at each layer (used only with multikernels)
 * `--depth int` : number of layers in the network
 
-You can also specify the number of events used every epoch for training, testing, the frequency at which results will be printed, the learning rate and its rate of decay. Train on GPU with `--cuda`.
-
-The network will be saved every epoch, and some stats will be saved in a csv file.
+Statistics will be saved after every epoch. Plots are updated if the network improves on its best (1/FPR) test score. If the current (1/FPR) score matches the previous best, plots are updated only if test AUC is improved upon.
 
 ## NYU Data
 
