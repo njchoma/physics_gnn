@@ -17,6 +17,9 @@ def read_args():
   add_arg('--plot', dest='plot', help='type of plotting to perform',type=str,default=None)
   add_arg('--save_best_model', dest='save_best_model', help='saves best model based upon test 1/FPR',action='store_true')
   add_arg('--tpr_target', dest='tpr_target', help='Sets TPR score at which 1/FPR is evaluated',type=float,default=0.5)
+  add_arg('--no_shuffle', dest='shuffle_while_training',help='Process samples in order of dataset for every epoch',action='store_false')
+  add_arg('--nb_batch', dest='nb_batch',help='minibatch size',type=int, default=1)
+  add_arg('--sorted_training', dest='sorted_training',help='Group similar-sized samples in training (less 0-padding->faster, but worse gradient estimates)',action='store_true')
 
   # Kernel-specific
   add_arg('--kernels', dest='kernels', help='List of kernels. Add \'-layerwise\' to kernel name to create one kernel instance per layer. E.g. \'MLPDirected-layerwise\'', default='Gaussian',nargs='+')
@@ -34,8 +37,6 @@ def read_args():
   add_arg('--nb_sparse', dest='nb_sparse', help='number of non-zero edges associated with each node when updating adjacency matrix',type=int,default=10)
   add_arg('--lr', dest='lrate', help='learning rate', type=float)
   add_arg('--lrdecay', dest='lrdecay', help='learning rate decay, `lr *= lrdecay` each epoch',type=float, default=0.95)
-  add_arg('--nb_batch', dest='nb_batch',help='minibatch size',type=int, default=1)
-  add_arg('--no_shuffle', dest='shuffle_while_training',help='Process samples in order of dataset for every epoch',action='store_false')
   add_arg('--nb_extra_nodes', dest='nb_extra_nodes',help='Number of nodes of initial value 0 to append to each sample',type=int,default=0)
   add_arg('--readout', dest='readout',help='Type of pooling after GNN layers',default='Sum')
   add_arg('--node_type', dest='node_type',help='Type of nodes to use in gnn layers',default='Identity')

@@ -22,10 +22,12 @@ def train_net(net, X, y, w, criterion, optimizer):
 
     plots = construct_plot(param.args)
 
-    batch_idx = batching.get_sorted_batches(len(y), 
+    batch_idx = batching.get_batches(len(y), 
                                      param.args.nb_batch, 
                                      X,
-                                     param.args.shuffle_while_training)
+                                     param.args.shuffle_while_training,
+                                     param.args.sorted_training
+                                     )
 
     for i, idx in enumerate(batch_idx):
         optimizer.zero_grad()
@@ -88,10 +90,11 @@ def test_net(net, X, y, w, criterion, roccurve):
     net.eval()
 
     # Sort test batches by size which greatly reduces padded zeros
-    batch_idx = batching.get_sorted_batches(
+    batch_idx = batching.get_batches(
                                       len(y), 
                                       param.args.nb_batch, 
-                                      X
+                                      X,
+                                      sort_batch=True
                                       )
     
     for i, idx in enumerate(batch_idx):

@@ -1,29 +1,33 @@
 import numpy as np
 from random import shuffle
 
-def _sort_batch(nb_samples_in, batch_size, idx):
+def _divide_batch(nb_samples_in, batch_size, idx):
   nb_batches = nb_samples_in // batch_size
+  # Group indices sequentially into batches
   idx_list = []
   for i in range(0,nb_batches*batch_size, batch_size):
     idx_list.append(idx[i:i+batch_size])
   return idx_list
   
 
-def get_batches(nb_samples_in, batch_size, shuffle_batch=False):
+def _get_unsorted_batches(nb_samples_in, batch_size, shuffle_batch=False):
   # Note: The operator // is floor division
   idx = list(range(nb_samples_in))
   if (shuffle_batch==True):
     shuffle(idx)
-  return _sort_batch(nb_samples_in, batch_size, idx)
+  return _divide_batch(nb_samples_in, batch_size, idx)
 
 
-def get_sorted_batches(nb_samples_in, batch_size, X, shuffle_batch=False):
+def get_batches(nb_samples_in,batch_size,X,shuffle_batch=False,sort_batch=False):
   '''
   Gets batches for testing sets, grouping together
   batches of similar size.
   This allows speedup in testing, where sample
   order doesn't matter.
   '''
+  if sort_batch == False:
+    return _get_unsorted_batches(nb_samples_in, batch_size, shuffle_batch)
+
   # Sort samples by nb_nodes
   sample_sizes = np.zeros(nb_samples_in)
   for i, sample in enumerate(X):
@@ -31,7 +35,7 @@ def get_sorted_batches(nb_samples_in, batch_size, X, shuffle_batch=False):
   sm_to_lg = np.argsort(sample_sizes)
 
   # Get batches
-  idx_list = _sort_batch(nb_samples_in, batch_size, sm_to_lg)
+  idx_list = _divide_batch(nb_samples_in, batch_size, sm_to_lg)
 
   # Optionally shuffle order of batches
   if shuffle_batch == True:
