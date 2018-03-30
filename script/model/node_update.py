@@ -30,8 +30,8 @@ class GRUUpdate(nn.Module):
     self.hh = nn.Linear(fmap_out, 3 * fmap_out)
 
   def forward(self, i, h):
-    r_i, z_i, n_i = self.ih(i.transpose(1,2)).chunk(3,-1)
-    r_h, z_h, n_h = self.hh(h.transpose(1,2)).chunk(3,-1)
+    r_i, z_i, n_i = self.ih(i).chunk(3,-1)
+    r_h, z_h, n_h = self.hh(h).chunk(3,-1)
 
     r = F.sigmoid(r_i+r_h)
     z = F.sigmoid(z_i+z_h)
@@ -39,4 +39,4 @@ class GRUUpdate(nn.Module):
 
     o = (1-z)*n + z*h
 
-    return o.transpose(1,2)
+    return o

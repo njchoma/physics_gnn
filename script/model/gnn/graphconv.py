@@ -31,14 +31,14 @@ class Simple(nn.Module):
     self.emb_act = nn.Tanh()
 
   def forward(self, ops, emb_in, *args, **kwargs):
-    batch, fmap, nb_node = emb_in.size()
+    batch,nb_node,fmap= emb_in.size()
     # Embed vertices
-    h = self.fc(emb_in.transpose(1,2))
+    h = self.fc(emb_in)
     h = self.h_act(h)
     # Perform convolution
-    A = ops[:,:,nb_node:] # Should be adjacency matrix (will need to improve this)
+    A = ops[:,nb_node:,:] # Should be adjacency matrix (will need to improve this)
     emb = self.emb_act(torch.matmul(A, h))
-    return emb.transpose(1,2)
+    return emb
 
 
 def join_operators(adj, operator_iter):

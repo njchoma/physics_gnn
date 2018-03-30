@@ -81,17 +81,17 @@ class MLPdirected(Adj_Kernel):
       self.layer1 = nn.Linear(2*fmaps, nb_hidden)
       self.layer2 = nn.Linear(nb_hidden,1)
 
-   def forward(self, adj_in, emb_in, layer, *args, **kwargs):
-      batch, fmap, nb_node = emb_in.size()
+   def forward(self, adj_in, emb_in,*args,mask=None,batch_nb_nodes=None, **kwargs):
+      batch, nb_node, fmap = emb_in.size()
       # Convert out of batches
-      emb_cartesian = cartesian(emb_in.transpose(1,2))
+      emb_cartesian = cartesian(emb_in)
       # Apply MLP
       edge_out = self.layer1(_batch_unbind(emb_cartesian))
       edge_out = functional.relu(edge_out)
-      edge_out = self.layer2(edge_out).resize(batch*nb_node, nb_node)
-      edge_out = functional.sigmoid(edge_out)
+      adj = self.layer2(edge_out).resize(batch*nb_node, nb_node)
       # Return to batch sizes
-      adj = _batch_bind(edge_out, batch)
+      adj = _batch_bind(adj, batch)
+      adj = functional.sigmoid(adj)
       self.save_adj(adj)
       return adj
 
@@ -100,7 +100,7 @@ class Identity(Adj_Kernel):
     super(Identity, self).__init__()
 
   def forward(self, adj_in, emb_in,*args, **kwargs):
-    batches, features, nodes = emb_in.size()
+    batches, nodes, features = emb_in.size()
     ones = torch.ones(nodes)
     if emb_in.is_cuda:
       ones = ones.cuda()
@@ -170,24 +170,22 @@ class Gaussian(Adj_Kernel):
 
     def forward(self, adj_in, emb, *args, mask=None, batch_nb_nodes=None,**kwargs):
         """takes the exponential of squared distances"""
-        batch, fmap, nb_node = emb.size()
+        batch,nb_node,fmap = emb.size()
 
         if self.periodic:
           adj = gaussian(self.sqdist(emb), self.sigma)
         else:
           if self.spatial_coords is not None:
-            coord = emb[:,self.spatial_coords]
+            coord = emb[:,:,self.spatial_coords]
             fmap = len(self.spatial_coords)
           else:
             coord = emb
           # Expand and transpose coords
-          coord = coord.unsqueeze(3).expand(batch,fmap,nb_node,nb_node)
-          coord_t = coord.transpose(2,3)
+          coord = coord.unsqueeze(2).expand(batch,nb_node,nb_node,fmap)
+          coord_t = coord.transpose(1,2)
 
           # Apply gaussian kernel to adj
-          adj = coord-coord_t
-          adj = adj**2
-          adj = adj.mean(1)
+          adj = ((coord-coord_t)**2).mean(3)
           adj = torch.exp(-adj.div(self.sigma**2))
           
         if not self.diag:
