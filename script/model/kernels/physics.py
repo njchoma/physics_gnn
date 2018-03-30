@@ -333,7 +333,7 @@ class QCDAwareMeanNorm(Adj_Kernel):
         self.sqdist = ts.sqdist_periodic_ if periodic else ts.sqdist_
 
     def forward(self, adj_in, emb, *args, batch_nb_nodes=None, mask=None, **kwargs):
-        nb_batch, _, nb_node = emb.size()
+        nb_batch, nb_node, fmap = emb.size()
         ts.check_for_nan(self.alpha, 'nan in kernel param : alpha', )
         ts.check_for_nan(self.beta, 'nan in kernel param : beta')
 
@@ -341,7 +341,7 @@ class QCDAwareMeanNorm(Adj_Kernel):
         '''
         ts.check_for_inf(sqdist, 'inf in kernel : sqdist')
         '''
-        momentum = emb[:, 4, :]
+        momentum = emb[:, :, 4]
         mean_momentum = momentum.sum(1,keepdim=True)
         mean_momentum = torch.div(mean_momentum, batch_nb_nodes.unsqueeze(1))
         mean_momentum = mean_momentum.repeat(1,nb_node)

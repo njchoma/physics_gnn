@@ -57,14 +57,14 @@ class Mean(Readout):
     return sigmoid(emb)
 
   def _pooling(self, emb_in, adj_mask):
-    return mask_embedding(emb_in, adj_mask).sum(2)
+    pass
 
 class Sum(Readout):
   def __init__(self,fmaps):
     super(Sum, self).__init__(fmaps)
 
   def _pooling(self, emb_in, adj_mask):
-    return mask_embedding(emb_in, adj_mask).sum(2)
+    return mask_embedding(emb_in, adj_mask).sum(1)
 
 class Max(Readout):
   def __init__(self,fmaps):
@@ -82,9 +82,9 @@ class FCL(nn.Module):
     self.activation = nn.Tanh()
 
   def forward(self, emb_in):
-    emb = self.fcl1(emb_in.transpose(1,2))
+    emb = self.fcl1(emb_in)
     emb = self.activation(emb)
-    return self.fcl2(emb).transpose(1,2)
+    return self.fcl2(emb)
 
 class DTNN(nn.Module):
   def __init__(self,fmaps):

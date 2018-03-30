@@ -58,7 +58,7 @@ def join_operators(adj, operator_iter):
   if not operator_iter:  # empty list
       return None
   ops = tuple(operator(adj) for operator in operator_iter)
-  ops = torch.cat(ops, 2)
+  ops = torch.cat(ops, 1)
 
   return ops
 
@@ -82,11 +82,11 @@ class GraphOpConv(nn.Module):
         super(GraphOpConv, self).__init__()
         invsqrt2 = sqrt(2) / 2
 
-        weight = torch.Tensor(1, out_fm, in_fm * (nb_op + 2))
+        weight = torch.Tensor(1,in_fm * (nb_op + 2), out_fm)
         nn.init.uniform(weight, -invsqrt2, invsqrt2)
         self.register_parameter('weight', Parameter(weight))
 
-        bias = torch.Tensor(1, out_fm, 1)
+        bias = torch.Tensor(1, 1, out_fm)
         nn.init.uniform(bias, -invsqrt2, invsqrt2)
         self.register_parameter('bias', Parameter(bias))
 
@@ -96,29 +96,29 @@ class GraphOpConv(nn.Module):
         on embedding `emb_in`
         """
 
-        batch_size, _, nb_node = emb_in.size()
+        batch_size, nb_node, fmap = emb_in.size()
 
         # Get mean of features across all nodes
         # Must use batch mean with padding
         avg = mean_with_padding(
-                                emb_in.clone(), 
+                                emb_in, 
                                 batch_nb_nodes, 
                                 adj_mask
-                                ).unsqueeze(2).expand_as(emb_in)
+                                ).unsqueeze(1).expand_as(emb_in)
         if ops is None:  # permutation invariant kernel
             spread = (emb_in, avg,)
         else:
-            spread = torch.bmm(emb_in, ops)
+            spread = torch.bmm(ops, emb_in)
             # Split spreading from different operators 
             # Concatenate on feature maps
             #   (identity operator and average are default)
-            spread = spread.split(nb_node, 2)
+            spread = spread.split(nb_node, 1)
             spread = (emb_in, avg,) + spread  
-        spread = torch.cat(spread, 1)
+        spread = torch.cat(spread, 2)
 
         # apply weights and bias
         weight, bias = self._resized_params(batch_size, nb_node)
-        emb_out = torch.bmm(weight, spread)
+        emb_out = torch.bmm(spread, weight)
         emb_out += bias
 
         return emb_out
@@ -127,8 +127,7 @@ class GraphOpConv(nn.Module):
         no_bs_weight_shape = self.weight.size()[1:]
         weight = self.weight.expand(batch_size, *no_bs_weight_shape)
 
-        nb_fm = self.bias.size()[1]
-        bias = self.bias.expand(batch_size, nb_fm, nb_node)
+        bias = self.bias.repeat(1, nb_node, 1)
 
         return (weight, bias)
 
@@ -157,7 +156,7 @@ class ResGOpConv(nn.Module):
     check_for_nan(nlinear, 'NAN in resgconv : nlinear')
     nlinear = F.relu(nlinear)
 
-    emb_out = torch.cat((linear, nlinear), 1)
+    emb_out = torch.cat((linear, nlinear), 2)
 
     if (emb_out != emb_out).data.sum() > 0:
       print('NAN in first gconv : before return')

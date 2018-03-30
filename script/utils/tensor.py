@@ -3,14 +3,14 @@ from torch.autograd import Variable
 from math import pi
 
 def mask_embedding(tensor, mask):
-  nb_node = tensor.size()[1]
-  return torch.mul(tensor,mask[:,0:1].repeat(1,nb_node, 1))
+  nb_feat = tensor.size()[2]
+  return torch.mul(tensor,mask[:,:,0:1].repeat(1,1,nb_feat))
 
 def mean_with_padding(tensor, batch_nb_nodes, mask):
   check_for_inf(tensor, "inf in tensor")
   # Get mean of tensor, accounting for zero padding of batches
-  summed = mask_embedding(tensor, mask).sum(2)
-  batch_div_by = batch_nb_nodes.unsqueeze(1).repeat(1,tensor.size()[1])
+  summed = mask_embedding(tensor, mask).sum(1)
+  batch_div_by = batch_nb_nodes.unsqueeze(1).repeat(1,tensor.size()[2])
   return summed / (batch_div_by+10**-20)
 
 def variable_as(tensor1, tensor2):
@@ -72,14 +72,14 @@ def sym_min(tensor):
 def sqdist_(emb):
     """Squarred euclidean distance over embedding (phi, eta)"""
 
-    coord = emb[:, 1:3, :]
+    coord = emb.transpose(1,2)[:, 1:3, :]
     batch, _, nb_node = coord.size()
     coord = coord.unsqueeze(3).expand(batch, 2, nb_node, nb_node)
     coord_t = coord.transpose(2, 3)
     diff = coord - coord_t
     sqdist = (diff ** 2).sum(1).squeeze(1)
 
-    return sqdist
+    return sqdist.transpose(1,2)
 
 
 def sqdist_periodic_(emb):
@@ -110,10 +110,10 @@ def spatialnorm(emb, batch_nb_nodes, adj_mask):
     """
 
     avg = mean_with_padding(emb, batch_nb_nodes, adj_mask)
-    emb_centered = emb - avg.unsqueeze(2).expand_as(emb)
+    emb_centered = emb - avg.unsqueeze(1).expand_as(emb)
 
     var = 10**-20+mean_with_padding(emb_centered ** 2, batch_nb_nodes, adj_mask)
-    emb_norm = emb_centered / var.sqrt().unsqueeze(2).expand_as(emb_centered)
+    emb_norm = emb_centered / var.sqrt().unsqueeze(1).expand_as(emb_centered)
 
     return emb_norm, avg, var
 

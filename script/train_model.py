@@ -44,7 +44,7 @@ def train_net(net, X, y, w, criterion, optimizer):
 
         # Put into variables
         ground_truth = Variable(torch.Tensor(batch_y))
-        jet = Variable(torch.Tensor(batch_X))
+        jet = Variable(torch.Tensor(batch_X).transpose(1,2))
         weight = Variable(torch.Tensor(batch_w))
         adj_mask = Variable(torch.Tensor(adj_mask))
         batch_nb_nodes = Variable(torch.Tensor(batch_nb_nodes.tolist()))
@@ -108,7 +108,7 @@ def test_net(net, X, y, w, criterion, roccurve):
 
         # Put Variables in batches
         ground_truth = Variable(torch.Tensor(batch_y))
-        jet = Variable(torch.Tensor(batch_X))
+        jet = Variable(torch.Tensor(batch_X).transpose(1,2))
         weight = Variable(torch.Tensor(batch_w))
         adj_mask = Variable(torch.Tensor(adj_mask))
         batch_nb_nodes = Variable(torch.Tensor(batch_nb_nodes.tolist()))

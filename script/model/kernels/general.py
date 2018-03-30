@@ -69,7 +69,7 @@ class DistMult(Adj_Kernel):
     self.matrix = nn.Parameter(torch.zeros(fmap,fmap))
 
   def forward(self,adj_in,emb_in, *args, mask=None, batch_nb_nodes=None, **kwargs):
-    adj = torch.matmul(emb_in.transpose(1,2), torch.matmul(self.matrix, emb_in))
+    adj = torch.matmul(emb_in, torch.matmul(self.matrix, emb_in.transpose(1,2)))
     adj = _softmax_with_padding(adj, mask=mask, batch_nb_nodes=batch_nb_nodes)
     self._save_adj(adj)
     return adj
@@ -145,7 +145,7 @@ def _softmax_with_padding(adj_in, mask=None, batch_nb_nodes=None):
   # Remove padded nodes from sum
   padding_correction = adj_in.size()[1]-batch_nb_nodes
   padding_correction = padding_correction.unsqueeze(1).expand_as(summed_exp)
-  summed_exp = summed_exp - torch.mul(padding_correction, exp[:,-1])
+  summed_exp = summed_exp - torch.mul(padding_correction, exp[:,:,-1])
   # Apply softmax
   return exp / (summed_exp + 10 **-20).unsqueeze(2).expand_as(exp)
 

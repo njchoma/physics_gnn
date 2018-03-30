@@ -22,7 +22,7 @@ class GNN(nn.Module):
     self.readout = get_readout()
 
   def forward(self, emb, mask, batch_nb_nodes):
-    batch_size, fmap, nb_pts  = emb.size()
+    batch_size, nb_pts, fmap  = emb.size()
     # Create dummy first adjacency matrix
     adj = Variable(torch.ones(batch_size, nb_pts, nb_pts))
     if emb.is_cuda:
