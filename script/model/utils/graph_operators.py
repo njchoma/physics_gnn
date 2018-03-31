@@ -54,7 +54,7 @@ def degree(adj):
 
     def _degree_one(adj):
         batch_size, nb_node, _ = adj.size()
-        deg = adj.sum(2,keepdim=True)  # operators are used with right side dot product
+        deg = adj.sum(2,keepdim=True)
         deg = deg.repeat(1,1,nb_node)
         operator = identity(adj) * deg
 

@@ -130,15 +130,14 @@ def _delete_diag(adj):
 
     return adj
 
-'''
 def _softmax_with_padding(adj_in, mask=None, batch_nb_nodes=None):
   S = functional.softmax(adj_in)
   if mask is not None:
     S = S * mask
-  E = S.sum(2,keepdim=True) + 10**-10
+  E = S.sum(2,keepdim=True) + 10**-20
   return S / E
-'''
 
+'''
 def _softmax_with_padding(adj_in, mask=None, batch_nb_nodes=None):
   exp = adj_in.exp()
   summed_exp = exp.sum(2)
@@ -148,6 +147,7 @@ def _softmax_with_padding(adj_in, mask=None, batch_nb_nodes=None):
   summed_exp = summed_exp - torch.mul(padding_correction, exp[:,:,-1])
   # Apply softmax
   return exp / (summed_exp + 10 **-20).unsqueeze(2).expand_as(exp)
+'''
 
 
 class Gaussian(Adj_Kernel):
