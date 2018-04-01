@@ -31,8 +31,23 @@ GCNN/
 
 To train a network, launch `main.sh` with argumented defined as desired. Run `python3 script/main.py --help` to see a list of arguments.
 
-The main arguments used to design a network are :
-* `--kernel str` : type of kernel / architecture used
+### Experiment arguments
+* `--name` str : network reference name
+* `--data` str : dataset to use. Choose between {NYU, ICECUBE, NERSC}
+* `--cuda` : flag to train on GPU
+* `--nbtrain` int : number of training samples to use
+* `--nbtest` int : number of testing samples to use
+* `--nbprint int : print frequency by batch (note that at this point changing minibatch size changes print frequency
+* `--quiet` : flag to reduce printing
+* `--plot` str : type of plotting to perform. Choose from {spectral, spectral3d, eig, ker}
+* `--save_best_model` : flag to save best model based on test 1/FPR
+* `--tpr_target` float : set the TPR against which 1/FPR will be measures. Default is 0.5
+* `--no_shuffle` : flag to load and run samples in the same order. Good for plotting
+* `--nb_batch` int : minibatch size
+* `--sorted_training` : flag to group similar-sized training samples (test does this by default). Minibatches of different sizes are padded with zeros so setting this flag significantly speeds up training. However, scores are not quite as high.
+
+
+* `--kernel str list` : type of kernels to use. 
 * `--fm int` : number of node feature maps at each layer
 * `--depth int` : number of layers in the network
 
