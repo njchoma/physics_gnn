@@ -5,6 +5,7 @@ from torch.nn.functional import sigmoid
 
 import loading.model.model_parameters as param
 from utils.tensor import mean_with_padding, mask_embedding
+from model.readout.gmm import GMM
 
 def get_readout():
   # Implement option to choose different pooling
@@ -23,6 +24,8 @@ def get_readout():
     readout = DTNN_Mean(fmaps)
   elif readout_type == 'DTNN_Max':
     readout = DTNN_Max(fmaps)
+  elif readout_type == 'GMM':
+    readout = GMM(fmaps, nb_gauss=8)
   else:
     raise Exception("Readout type {} not recognized".format(readout_type))
 
