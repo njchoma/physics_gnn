@@ -25,7 +25,7 @@ def get_readout():
   elif readout_type == 'DTNN_Max':
     readout = DTNN_Max(fmaps)
   elif readout_type == 'GMM':
-    readout = GMM(8, fmaps)
+    readout = GMM(fmaps, nb_gauss=8)
   else:
     raise Exception("Readout type {} not recognized".format(readout_type))
 
