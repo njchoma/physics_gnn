@@ -7,7 +7,6 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from graphics.plot_graph import construct_plot
 import loading.model.model_parameters as param
 import data_ops.batching as batching
 
@@ -19,8 +18,6 @@ def train_net(net, X, y, w, criterion, optimizer):
     epoch_loss = 0
     step_loss = 0
     net.train()
-
-    plots = construct_plot(param.args)
 
     batch_idx = batching.get_batches(len(y), 
                                      param.args.nb_batch, 
@@ -76,8 +73,7 @@ def train_net(net, X, y, w, criterion, optimizer):
                                             )
           step_loss = 0
     epoch_loss_avg = epoch_loss / len(batch_idx)
-    if plots is not None:
-      plots.epoch_finished()
+
     return epoch_loss_avg
 
 

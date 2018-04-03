@@ -14,25 +14,27 @@ from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 from utils.in_out import make_dir_if_not_there
 import graphics.graph_utils as graph_utils
+import loading.model.model_parameters as param
 
-def construct_plot(args):
-  if args.plot == None:
+def construct_plot():
+  plot_type = param.args.plot
+  if plot_type  == None:
     return None
   logging.info("Building plotter...")
   opto_args = {}
-  if args.plot == 'spectral':
+  if plot_type  == 'spectral':
     plot_class = Spectral_Plot
-  elif args.plot == 'spectral3d':
+  elif plot_type  == 'spectral3d':
     plot_class = Spectral_Plot
     opto_args['dim'] = 3
-  elif args.plot == 'eig':
+  elif plot_type == 'eig':
     plot_class = Eig_Plot
-  elif args.plot == 'ker':
+  elif plot_type == 'ker':
     plot_class = Visualize_Kernel
   else:
-    raise ValueError("{} plot type not recognized".format(args.plot))
-  logging.info("{} plotting to be performed".format(args.plot))
-  return plot_class(args,**opto_args)
+    raise ValueError("{} plot type not recognized".format(plot_type))
+  logging.info("{} plotting to be performed".format(plot_type))
+  return plot_class(param.args,**opto_args)
 
 
 class Plot(object):

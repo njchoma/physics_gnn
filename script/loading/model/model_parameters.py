@@ -17,8 +17,8 @@ def init(args_in):
     args.nbtest   = args_in.nbtest
     args.nbprint  = args_in.nbprint
     args.nb_batch = args_in.nb_batch
-    args.nb_batch = args_in.nb_batch
     args.shuffle_while_training = args_in.shuffle_while_training
+    args.sorted_training = args_in.sorted_training
   except:
     args = args_in
     logging.warning("Model arguments created")
