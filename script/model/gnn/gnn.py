@@ -13,16 +13,15 @@ class GNN(nn.Module):
     - Runs through several graph convolution layers of specified type
     - Performs final classification using logistic regression
   '''
-  def __init__(self, plotting=None):
+  def __init__(self):
     super(GNN, self).__init__()
     self.layers = get_layers(
                              kernels = get_kernels(),
                              combine_kernels = get_combine_kernels()
                              )
     self.readout = get_readout()
-    self.plot=plotting
 
-  def forward(self, emb, mask, batch_nb_nodes):
+  def forward(self, emb, mask, batch_nb_nodes, plotting=None):
     batch_size, nb_pts, fmap  = emb.size()
 
     # Create dummy first adjacency matrix
@@ -34,8 +33,8 @@ class GNN(nn.Module):
     for i, layer in enumerate(self.layers):
       emb, adj = layer(emb, adj, mask, batch_nb_nodes)
       # Apply any plotting
-      if self.plot is not None:
-        self.plot.plot_graph(emb[0].data.cpu().numpy(),adj[0].data.cpu().numpy(),i)
+      if plotting is not None:
+        plotting.plot_graph(emb[0].data.cpu().numpy(),adj[0].data.cpu().numpy(),i)
 
     # Apply final readout and return
     return self.readout(emb, mask, batch_nb_nodes)

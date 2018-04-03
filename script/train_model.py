@@ -9,6 +9,7 @@ from torch.autograd import Variable
 
 import loading.model.model_parameters as param
 import data_ops.batching as batching
+from graphics.plot_graph import construct_plot
 
 
 def train_net(net, X, y, w, criterion, optimizer):
@@ -18,6 +19,8 @@ def train_net(net, X, y, w, criterion, optimizer):
     epoch_loss = 0
     step_loss = 0
     net.train()
+
+    plots = construct_plot()
 
     batch_idx = batching.get_batches(len(y), 
                                      param.args.nb_batch, 
@@ -55,7 +58,10 @@ def train_net(net, X, y, w, criterion, optimizer):
             batch_nb_nodes = batch_nb_nodes.cuda()
 
         # t0 = time.time()
-        out = net(jet, adj_mask, batch_nb_nodes)
+        if i == 2:
+          out = net(jet, adj_mask, batch_nb_nodes, plotting=plots)
+        else:
+          out = net(jet, adj_mask, batch_nb_nodes)
         # print("sample took {:.3e} s".format(time.time()-t0))
 
         loss = criterion(out, ground_truth, weight)
