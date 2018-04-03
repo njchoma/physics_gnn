@@ -15,7 +15,7 @@ class GMM(nn.Module):
     mu = torch.Tensor(nb_gauss, fmap)
     sigma = torch.Tensor(nb_gauss, fmap)
     nn.init.uniform(mu, -2, 2)
-    nn.init.uniform(sigma, 0.0, 1.0)
+    nn.init.uniform(sigma, 0.0, 0.01)
     self.mu=Parameter(mu)
     self.sigma=Parameter(sigma)
     # Fully connected output
