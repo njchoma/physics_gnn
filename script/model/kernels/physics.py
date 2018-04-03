@@ -356,7 +356,7 @@ class QCDAwareMeanNorm(Adj_Kernel):
         '''
         min_momenta.register_hook(ts.HookCheckForNan('NAN in backward min_momenta', action=print))
         '''
-        min_momenta = min_momenta.unsqueeze(2).repeat(1, 1, nb_node)
+        min_momenta = min_momenta.unsqueeze(1).repeat(1, nb_node, 1)
         d_ij_alpha = sqdist * min_momenta
         # d_ij_alpha.register_hook(ts.HookCheckForNan('NAN in backward d_ij_alpha', action=print))
         # ts.check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
