@@ -39,7 +39,7 @@ def train_model(train_X, train_y, train_w, test_X, test_y, test_w):
   roc_train = ROCCurve("train", zooms=zooms)
   roc_test  = ROCCurve("test", zooms=zooms)
 
-  for epoch in range(50):
+  for epoch in range(param.args.nbepoch):
     t0 = time.time()
     logging.info('\nLearning rate: {0:.3g}'.format(param.args.lrate))
     optimizer = torch.optim.Adamax(net.parameters(), lr=param.args.lrate)
