@@ -13,6 +13,7 @@ def read_args():
   add_arg('--nbtrain',dest='nbtrain', help='number training examples', type=int)
   add_arg('--nbtest', dest='nbtest', help='number testing examples', type=int)
   add_arg('--nbprint',dest='nbprint',help='print freq',type=int,default=10000)
+  add_arg('--nbepoch',dest='nbepoch',help='Number epochs through train set',type=int,default=100)
   add_arg('--quiet', dest='quiet', help='reduces print', action='store_true')
   add_arg('--plot', dest='plot', help='type of plotting to perform',type=str,default=None)
   add_arg('--save_best_model', dest='save_best_model', help='saves best model based upon test 1/FPR',action='store_true')

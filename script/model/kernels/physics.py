@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.nn import Parameter
 from torch.autograd import Variable
 
-from model.kernels.general import Adj_Kernel, _softmax_with_padding
+from model.kernels.general import Adj_Kernel, _softmax_with_padding, _softmax_with_padding2
 import utils.tensor as ts
 
 
@@ -361,7 +361,7 @@ class QCDAwareMeanNorm(Adj_Kernel):
         # d_ij_alpha.register_hook(ts.HookCheckForNan('NAN in backward d_ij_alpha', action=print))
         # ts.check_for_nan(d_ij_alpha, 'nan in kernel : d_ij_alpha')
 
-        beta = (self.beta ** 2).expand_as(d_ij_alpha)
+        beta = self.beta ** 2
         '''
         beta.register_hook(ts.HookCheckForNan(
             'NAN in backward beta**2', action=print, args=('d_ij_center : {}'.format(d_ij_alpha),)))
@@ -370,8 +370,8 @@ class QCDAwareMeanNorm(Adj_Kernel):
         d_ij_norm = - beta * d_ij_alpha
         # d_ij_norm.register_hook(ts.HookCheckForNan('NAN in backward d_ij_norm', action=print))
         # ts.check_for_nan(d_ij_norm, 'nan in kernel : d_ij_norm')
-        d_ij_norm = d_ij_norm * mask
         w_ij = _softmax_with_padding(d_ij_norm, mask=mask, batch_nb_nodes=batch_nb_nodes)
+        # w_ij = _softmax_with_padding2(d_ij_norm, mask=mask, batch_nb_nodes=batch_nb_nodes)
         # w_ij = d_ij_norm.exp()
 
         # Save adj matrix for later layers

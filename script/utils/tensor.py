@@ -42,15 +42,20 @@ def sym_min(tensor):
     defined as min(`tensor`, `tensor`^T).
     """
     def _sym_min_no_edge_feature(tensor):
+        '''
         batch, nb_node = tensor.size()
+        print("sym min no edge")
+        print(tensor)
 
         tens0 = tensor.unsqueeze(2).expand(batch, nb_node, nb_node)
         tens1 = tens0.transpose(1, 2).contiguous()
 
         res = torch.stack((tens0, tens1), 3)
         res, _ = res.min(3)
+        print(res)
         res = res[:,:,0]#.squeeze(3)
-        return res
+        '''
+        return tensor
 
     def _sym_min_edge_feature(tensor):
         batch, edge_fm, nb_node = tensor.size()
