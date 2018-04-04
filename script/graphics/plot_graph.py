@@ -105,8 +105,12 @@ class Spectral_Plot(Plot):
     if layer_num==(self.nb_layers-1):
       self.epoch_finished()
 
-  def plot_graph(self, nodes, edges, layer_num):
+  def plot_graph(self, nodes_in, edges_in, layer_num):
     logging.info("Plotting layer {}".format(layer_num))
+    if layer_num == 0:
+      nodes = nodes_in[:,param.args.spatial_coords]
+    else:
+      nodes = nodes_in
     edges = graph_utils.gaussian_kernel(nodes, N=2*10**1)
     edges_sum = edges.sum(axis=1)
     vk = Visualize_Kernel(self.args)
