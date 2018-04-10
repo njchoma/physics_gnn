@@ -19,7 +19,8 @@ class GNN_Layer(nn.Module):
     self.layer_nb = layer_nb
 
     # Define operators
-    self.operators = [graph_ops.degree, graph_ops.adjacency]
+    # self.operators = [graph_ops.degree, graph_ops.adjacency]
+    self.operators = [graph_ops.adjacency]
     self.nb_op = len(self.operators)
 
     # Define normalization and convolution

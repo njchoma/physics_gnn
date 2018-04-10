@@ -80,7 +80,7 @@ class GraphOpConv(nn.Module):
 
     def __init__(self, in_fm, out_fm, nb_op):
         super(GraphOpConv, self).__init__()
-        self.fc = nn.Linear(in_fm * (nb_op + 2), out_fm)
+        self.fc = nn.Linear(in_fm * (nb_op + 1), out_fm)
 
     def forward(self, ops, emb_in, batch_nb_nodes, adj_mask):
         """Defines the computation performed at every call.
@@ -92,11 +92,13 @@ class GraphOpConv(nn.Module):
 
         # Get mean of features across all nodes
         # Must use batch mean with padding
+        '''
         avg = mean_with_padding(
                                 emb_in, 
                                 batch_nb_nodes, 
                                 adj_mask
                                 ).unsqueeze(1).expand_as(emb_in)
+        '''
         if ops is None:  # permutation invariant kernel
             spread = (emb_in, avg,)
         else:
@@ -105,7 +107,8 @@ class GraphOpConv(nn.Module):
             # Concatenate on feature maps
             #   (identity operator and average are default)
             spread = spread.split(nb_node, 1)
-            spread = (emb_in, avg,) + spread  
+            # spread = (emb_in, avg,) + spread  
+            spread = (emb_in,) + spread  
         spread = torch.cat(spread, 2)
 
         emb_out = self.fc(spread)
