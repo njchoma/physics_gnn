@@ -80,15 +80,7 @@ class GraphOpConv(nn.Module):
 
     def __init__(self, in_fm, out_fm, nb_op):
         super(GraphOpConv, self).__init__()
-        invsqrt2 = sqrt(2) / 2
-
-        weight = torch.Tensor(1,in_fm * (nb_op + 2), out_fm)
-        nn.init.uniform(weight, -invsqrt2, invsqrt2)
-        self.register_parameter('weight', Parameter(weight))
-
-        bias = torch.Tensor(1, 1, out_fm)
-        nn.init.uniform(bias, -invsqrt2, invsqrt2)
-        self.register_parameter('bias', Parameter(bias))
+        self.fc = nn.Linear(in_fm * (nb_op + 2), out_fm)
 
     def forward(self, ops, emb_in, batch_nb_nodes, adj_mask):
         """Defines the computation performed at every call.
@@ -116,20 +108,9 @@ class GraphOpConv(nn.Module):
             spread = (emb_in, avg,) + spread  
         spread = torch.cat(spread, 2)
 
-        # apply weights and bias
-        weight, bias = self._resized_params(batch_size, nb_node)
-        emb_out = torch.bmm(spread, weight)
-        emb_out += bias
+        emb_out = self.fc(spread)
 
         return emb_out
-
-    def _resized_params(self, batch_size, nb_node):
-        no_bs_weight_shape = self.weight.size()[1:]
-        weight = self.weight.expand(batch_size, *no_bs_weight_shape)
-
-        bias = self.bias.repeat(1, nb_node, 1)
-
-        return (weight, bias)
 
 
 class ResGOpConv(nn.Module):
