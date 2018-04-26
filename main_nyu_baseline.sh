@@ -5,10 +5,11 @@
 # SBATCH --error=GPUTFtest.err
 #SBATCH --time=2-00:00:00
 #SBATCH --gres gpu:1
+#SBATCH --constraint=gpu_12gb
 #SBATCH --qos=batch
 #SBATCH --nodes=1
 #SBATCH --mem=10000
-#SBATCH --mail-type=ALL # notifications for job done & fail
+#SBATCH --mail-type=FAIL # notifications for job done & fail
 #SBATCH --mail-user=nc2201@courant.nyu.edu
 
 #########
@@ -23,12 +24,12 @@ NBTEST=$NBTRAIN
 # MODEL PARAMETERS
 ##################
 NBBATCH=100
-NBFMAP=64
-NBLAYER=6
+NBFMAP=96
+NBLAYER=8
 LRATE=0.005
-LRDECAY=0.95
-OPTIONS="--cuda"
-NBEXTRANODES=0
+LRDECAY=0.96
+OPTIONS="--nbepoch 100 --conv_type ResGNN --node_type Identity --readout Sum --cuda"
+NBEXTRANODES=30
 
 ###################
 # KERNEL PARAMETERS
@@ -37,7 +38,7 @@ KERNELS="QCDAwareMeanNorm"
 CMBKER="Fixed_Balanced"
 NBHIDDEN=4 # only applies with MLPdirected kernel
 
-JOBNAME="qcd_add""$NBEXTRANODES""Nodes_""$LRATE""_""$LRDECAY""_""$NBFMAP""_""$NBLAYER""_""$SLURM_ARRAY_TASK_ID"
+JOBNAME="qcd_""$NBEXTRANODES""_""$LRATE""_""$LRDECAY""_""$NBFMAP""_""$NBLAYER""_""$SLURM_ARRAY_TASK_ID"
 
 #############
 # FIXED INPUT
@@ -48,4 +49,4 @@ PYARGS="--name $JOBNAME --kernels $KERNELS --nb_batch $NBBATCH --combine_kernels
 
 
 # Network using a single kernel as described in "QCD-Aware Recursive Neural Networks for Jet Physics"
-srun python3 script/main.py $PYARGS
+python3 script/main.py $PYARGS

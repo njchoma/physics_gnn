@@ -36,7 +36,7 @@ def main():
     logging.info("Loading data...")
     if param.args.data == 'NYU':
         from loading.data.nyu.load_data import load_raw_data
-        datadir = '/data/grochette/data_nyu/'
+        datadir = '/misc/vlgscratch4/BrunaGroup/data_nyu/'
         trainfile = 'antikt-kt-train-gcnn.pickle'
         testfile  = 'antikt-kt-test.pickle'
         train_X, train_y, train_w = load_raw_data(
@@ -53,7 +53,7 @@ def main():
         param.args.spatial_coords = [1,2]
     elif param.args.data == 'NERSC':
         from loading.data.nersc.load_data import load_raw_data
-        datadir = '/data/grochette/data_nersc/'
+        datadir = '/misc/vlgscratch4/BrunaGroup/data_nersc'
         train_X, train_y, train_w = load_raw_data(
                                                   datadir, 
                                                   param.args.nbtrain, 
